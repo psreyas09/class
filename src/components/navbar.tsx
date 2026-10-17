@@ -57,31 +57,16 @@ export function Navbar({
     updateClock();
     const interval = setInterval(updateClock, 30000);
 
-    // Fetch dynamic drive url from settings if not passed
-    async function fetchSettings() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("settings")
-        .select("value")
-        .eq("key", "resources_drive_url")
-        .maybeSingle();
-
-      if (data?.value && data.value !== "https://drive.google.com") {
-        setDriveUrl(data.value);
-      } else if (!data?.value || data.value === "https://drive.google.com") {
-        setDriveUrl("https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU");
-      }
-
-      // Check admin status
-      const { data: adminCheck } = await supabase.rpc("is_admin");
-      if (typeof adminCheck === "boolean") {
-        setIsAdmin(adminCheck);
-      }
-    }
-    fetchSettings();
-
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    setDriveUrl(initialDriveUrl);
+  }, [initialDriveUrl]);
+
+  useEffect(() => {
+    setIsAdmin(initialIsAdmin);
+  }, [initialIsAdmin]);
 
   async function handleSignOut() {
     const supabase = createClient();

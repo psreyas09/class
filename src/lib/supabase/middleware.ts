@@ -60,6 +60,19 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Forward user context in headers to eliminate duplicate auth roundtrips in Server Components
+  const requestHeaders = new Headers(request.headers);
+  if (user) {
+    requestHeaders.set("x-user-id", user.id);
+    requestHeaders.set("x-user-email", user.email || "");
+    const userName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split("@")[0] ||
+      "";
+    requestHeaders.set("x-user-name", userName);
+  }
+
   // Fast path for authenticated users on standard routes
   if (user && !isAuthRoute) {
     // Only check admin authorization when attempting to visit /admin routes
@@ -77,5 +90,16 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  return supabaseResponse;
+  const finalResponse = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  // Preserve any session cookies refreshed during getUser()
+  supabaseResponse.cookies.getAll().forEach((cookie) => {
+    finalResponse.cookies.set(cookie.name, cookie.value, cookie);
+  });
+
+  return finalResponse;
 }
