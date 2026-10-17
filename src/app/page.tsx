@@ -29,7 +29,9 @@ export default async function HomePage() {
     .eq("key", "resources_drive_url")
     .maybeSingle();
 
-  const driveUrl = settingData?.value || "https://drive.google.com";
+  const driveUrl =
+    settingData?.value ||
+    "https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU";
 
   // Fetch active tasks sorted by nearest due date
   // RLS automatically enforces: is_archived = false AND due_at + interval '4 days' > now()

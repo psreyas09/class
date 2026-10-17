@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
   CONSTRAINT check_drive_url CHECK (key <> 'resources_drive_url' OR value LIKE 'https://%')
 );
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
-INSERT INTO public.settings (key, value) VALUES ('resources_drive_url', 'https://drive.google.com') ON CONFLICT (key) DO NOTHING;
+INSERT INTO public.settings (key, value) VALUES ('resources_drive_url', 'https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 DROP POLICY IF EXISTS "Settings viewable by approved users or admins" ON public.settings;
 CREATE POLICY "Settings viewable by approved users or admins" ON public.settings FOR SELECT TO authenticated USING (public.is_approved() OR public.is_admin());
 DROP POLICY IF EXISTS "Admins can update settings" ON public.settings;

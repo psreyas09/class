@@ -25,7 +25,7 @@ interface NavbarProps {
 }
 
 export function Navbar({
-  initialDriveUrl = "https://drive.google.com",
+  initialDriveUrl = "https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU",
   initialIsAdmin = false,
   userEmail,
   userName,

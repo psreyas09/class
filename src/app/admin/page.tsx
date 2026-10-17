@@ -51,7 +51,9 @@ export default async function AdminPage() {
     .eq("key", "resources_drive_url")
     .maybeSingle();
 
-  const driveUrl = settingData?.value || "https://drive.google.com";
+  const driveUrl =
+    settingData?.value ||
+    "https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU";
 
   // Fetch active tasks
   const { data: activeTasksData } = await supabase

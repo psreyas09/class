@@ -26,7 +26,9 @@ export default async function ResolvedPage() {
     .eq("key", "resources_drive_url")
     .maybeSingle();
 
-  const driveUrl = settingData?.value || "https://drive.google.com";
+  const driveUrl =
+    settingData?.value ||
+    "https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU";
 
   // Query secure resolved_complaints_view (Fixed / Cannot Be Fixed, zero student identifiers)
   const { data: resolvedData } = await supabase
