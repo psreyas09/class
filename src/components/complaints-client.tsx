@@ -50,6 +50,24 @@ export function ComplaintsClient({
   const [displayName, setDisplayName] = useState(defaultDisplayName);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Feed filtering states
+  const [filterTab, setFilterTab] = useState<"all" | "mine">("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+
+  const myComplaintsCount = complaints.filter(
+    (c) => c.student_id === currentUserId
+  ).length;
+
+  const filteredComplaints = complaints.filter((c) => {
+    if (filterTab === "mine" && c.student_id !== currentUserId) {
+      return false;
+    }
+    if (selectedCategory !== "All" && c.category !== selectedCategory) {
+      return false;
+    }
+    return true;
+  });
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -364,19 +382,61 @@ export function ComplaintsClient({
         </section>
       )}
 
-      {/* My Complaints List */}
-      <section aria-label="My Complaints List">
-        <h2 className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 font-mono-numbers uppercase tracking-wider mb-3">
-          My Submissions ({complaints.length})
-        </h2>
+      {/* Complaints Feed */}
+      <section aria-label="Complaints Feed" className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+          {/* Feed Filter Tabs */}
+          <div className="flex items-center gap-1 text-xs">
+            <button
+              type="button"
+              onClick={() => setFilterTab("all")}
+              className={`px-3 py-1.5 rounded font-medium transition-colors ${
+                filterTab === "all"
+                  ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                  : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+              }`}
+            >
+              All Complaints ({complaints.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterTab("mine")}
+              className={`px-3 py-1.5 rounded font-medium transition-colors ${
+                filterTab === "mine"
+                  ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                  : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+              }`}
+            >
+              My Submissions ({myComplaintsCount})
+            </button>
+          </div>
 
-        {complaints.length === 0 ? (
+          {/* Category Filter */}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-2.5 py-1 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-700 dark:text-zinc-300 focus:outline-none cursor-pointer"
+            >
+              <option value="All">All Categories</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {filteredComplaints.length === 0 ? (
           <div className="p-8 sm:p-12 text-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded">
             <div className="w-10 h-10 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 mx-auto flex items-center justify-center text-zinc-400 mb-3">
               <MessageSquare className="w-5 h-5 text-zinc-400" />
             </div>
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              No complaints submitted yet
+              {filterTab === "mine"
+                ? "You haven't submitted any complaints yet"
+                : "No complaints found"}
             </h3>
             <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
               Got an issue with labs, timetable clashes, or classroom equipment? Click "New Complaint" to log it for your CRs.
@@ -384,7 +444,7 @@ export function ComplaintsClient({
           </div>
         ) : (
           <div className="space-y-3">
-            {complaints.map((c) => (
+            {filteredComplaints.map((c) => (
               <article
                 key={c.id}
                 className="border border-zinc-200 dark:border-zinc-800 bg-[var(--card)] p-4 rounded space-y-3"
@@ -395,17 +455,25 @@ export function ComplaintsClient({
                     <span className="px-1.5 py-0.5 text-[10px] font-mono-numbers font-medium rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                       {c.category}
                     </span>
+
                     {c.is_anonymous ? (
                       <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono-numbers rounded border border-zinc-200 dark:border-zinc-800 text-zinc-500">
                         <EyeOff className="w-2.5 h-2.5" />
-                        Anonymous
+                        Anonymous Student
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono-numbers rounded border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono-numbers rounded border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300">
                         <User className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
-                        {c.display_name || "With Name"}
+                        By: <strong className="font-medium text-zinc-900 dark:text-zinc-100">{c.display_name || "Student"}</strong>
                       </span>
                     )}
+
+                    {c.student_id === currentUserId && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-mono-numbers rounded bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-300/60 dark:border-amber-900/40 font-medium">
+                        Your Submission
+                      </span>
+                    )}
+
                     <span className="text-[11px] font-mono-numbers text-zinc-400">
                       {formatKolkataShort(c.created_at)}
                     </span>

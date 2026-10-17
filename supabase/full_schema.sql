@@ -193,7 +193,8 @@ CREATE TABLE IF NOT EXISTS public.complaints (
 );
 ALTER TABLE public.complaints ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Students can only read own complaints" ON public.complaints;
-CREATE POLICY "Students can only read own complaints" ON public.complaints FOR SELECT TO authenticated USING (student_id = auth.uid());
+DROP POLICY IF EXISTS "All authenticated users can view complaints" ON public.complaints;
+CREATE POLICY "All authenticated users can view complaints" ON public.complaints FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "Approved students can insert own complaints as Open" ON public.complaints;
 CREATE POLICY "Approved students can insert own complaints as Open" ON public.complaints FOR INSERT TO authenticated WITH CHECK (student_id = auth.uid() AND status = 'Open' AND (public.is_approved() OR public.is_admin()));
 
@@ -207,7 +208,8 @@ CREATE TABLE IF NOT EXISTS public.complaint_replies (
 );
 ALTER TABLE public.complaint_replies ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Replies viewable by admin or complaint owner" ON public.complaint_replies;
-CREATE POLICY "Replies viewable by admin or complaint owner" ON public.complaint_replies FOR SELECT TO authenticated USING (public.is_admin() OR EXISTS (SELECT 1 FROM public.complaints c WHERE c.id = complaint_replies.complaint_id AND c.student_id = auth.uid()));
+DROP POLICY IF EXISTS "Replies viewable by all authenticated users" ON public.complaint_replies;
+CREATE POLICY "Replies viewable by all authenticated users" ON public.complaint_replies FOR SELECT TO authenticated USING (true);
 
 -- 6. VIEWS (SECURITY BARRIER)
 DROP VIEW IF EXISTS public.admin_complaints_view;
