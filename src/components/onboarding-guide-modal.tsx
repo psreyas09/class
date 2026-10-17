@@ -23,7 +23,7 @@ export function OnboardingGuideModal({
   isOpen,
   onClose,
 }: OnboardingGuideModalProps) {
-  const [dontShowAgain, setDontShowAgain] = useState(true);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   if (!isOpen) return null;
 
