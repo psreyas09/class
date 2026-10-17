@@ -130,19 +130,22 @@ export function ComplaintsClient({
       setComplaints([data as Complaint, ...complaints]);
 
       // Notify CRs and Admin about the newly registered complaint
-      fetch("/api/complaints/notify-cr", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: trimmedTitle,
-          category,
-          description: trimmedDesc,
-          displayName: finalDisplayName,
-          isAnonymous,
-        }),
-      }).catch((err) => {
-        console.error("Failed to notify CRs:", err);
-      });
+      try {
+        await fetch("/api/complaints/notify-cr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({
+            title: trimmedTitle,
+            category,
+            description: trimmedDesc,
+            displayName: finalDisplayName,
+            isAnonymous,
+          }),
+        });
+      } catch (err) {
+        console.warn("Failed to dispatch CR notification:", err);
+      }
 
       setTitle("");
       setDescription("");

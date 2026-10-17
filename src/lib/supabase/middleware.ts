@@ -46,8 +46,10 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/login") || pathname.startsWith("/auth");
   const isWaitingRoute = pathname === "/waiting-approval";
 
-  // If not logged in and requesting a protected page
-  if (!user && !isAuthRoute) {
+  const isApiRoute = pathname.startsWith("/api");
+
+  // If not logged in and requesting a protected page (API routes handle their own 401s)
+  if (!user && !isAuthRoute && !isApiRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

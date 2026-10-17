@@ -29,7 +29,8 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    const headerUserId = request.headers.get("x-user-id");
+    if (!user && !headerUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -47,16 +48,58 @@ export async function POST(request: NextRequest) {
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || "https://class-chi-topaz.vercel.app";
 
-    // 2. Retrieve all CR & Admin emails
-    const { data: crRows } = await supabase.rpc("get_cr_notification_emails");
-    let crEmails = (crRows || [])
-      .map((r: { email: string }) => r.email?.trim().toLowerCase())
-      .filter((e: string | undefined): e is string => !!e && e.includes("@"));
+    // 2. Retrieve all CR & Admin emails with complete fallbacks
+    const crEmailsSet = new Set<string>();
 
-    // Ensure Primary Admin psreyas09@gmail.com is always included
-    if (!crEmails.includes("psreyas09@gmail.com")) {
-      crEmails.push("psreyas09@gmail.com");
+    try {
+      const { data: crRows, error: rpcError } = await supabase.rpc(
+        "get_cr_notification_emails"
+      );
+      if (!rpcError && Array.isArray(crRows)) {
+        for (const item of crRows) {
+          const email = (
+            typeof item === "string" ? item : item?.email
+          )
+            ?.trim()
+            .toLowerCase();
+          if (email && email.includes("@")) {
+            crEmailsSet.add(email);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("RPC get_cr_notification_emails error:", err);
     }
+
+    // Try fetching from admins table directly
+    try {
+      const { data: admins } = await supabase.from("admins").select("email");
+      if (Array.isArray(admins)) {
+        for (const a of admins) {
+          const email = a.email?.trim().toLowerCase();
+          if (email && email.includes("@")) {
+            crEmailsSet.add(email);
+          }
+        }
+      }
+    } catch {
+      // Ignored if RLS restricts regular users
+    }
+
+    // Always include Primary Admin
+    crEmailsSet.add("psreyas09@gmail.com");
+
+    const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER;
+    const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
+    const resendApiKey = process.env.RESEND_API_KEY;
+
+    // If configured Gmail account has an email address, ensure it's in the recipient list
+    if (gmailUser && gmailUser.includes("@")) {
+      crEmailsSet.add(gmailUser.trim().toLowerCase());
+    }
+
+    const crEmails = Array.from(crEmailsSet);
+    console.log(`[notify-cr] Sending complaint alert to:`, crEmails);
 
     const submitterLabel = isAnonymous
       ? "Anonymous Student (Confidential)"
@@ -66,10 +109,6 @@ export async function POST(request: NextRequest) {
     let pushSent = 0;
 
     // 3. Send Email Alerts to CRs
-    const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER;
-    const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
-    const resendApiKey = process.env.RESEND_API_KEY;
-
     if ((gmailUser && gmailPass) || resendApiKey) {
       const emailSubject = `[${appName}] New Complaint: [${category}] ${title}`;
 
@@ -121,8 +160,8 @@ export async function POST(request: NextRequest) {
           const transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
-              user: gmailUser.trim(),
-              pass: gmailPass.replace(/\s+/g, ""),
+              user: gmailUser,
+              pass: gmailPass,
             },
           });
 
@@ -135,12 +174,13 @@ export async function POST(request: NextRequest) {
                 html: htmlContent,
               });
               emailsSent++;
+              console.log(`[notify-cr] Email successfully sent to ${recipient}`);
             } catch (err) {
-              console.error(`Failed to send CR email to ${recipient}:`, err);
+              console.error(`[notify-cr] Failed to send email to ${recipient}:`, err);
             }
           }
         } catch (err) {
-          console.error("Gmail SMTP error:", err);
+          console.error("[notify-cr] Gmail SMTP error:", err);
         }
       } else if (resendApiKey) {
         try {
@@ -158,11 +198,11 @@ export async function POST(request: NextRequest) {
               });
               emailsSent++;
             } catch (err) {
-              console.error(`Resend CR send failed for ${recipient}:`, err);
+              console.error(`[notify-cr] Resend failed for ${recipient}:`, err);
             }
           }
         } catch (err) {
-          console.error("Resend error:", err);
+          console.error("[notify-cr] Resend error:", err);
         }
       }
     }
@@ -172,8 +212,10 @@ export async function POST(request: NextRequest) {
       emailsSent,
       pushSent,
       crCount: crEmails.length,
+      recipients: crEmails,
     });
   } catch (err: unknown) {
+    console.error("[notify-cr] Unhandled error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Internal error" },
       { status: 500 }

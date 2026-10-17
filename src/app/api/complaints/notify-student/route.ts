@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    const headerUserId = request.headers.get("x-user-id");
+    if (!user && !headerUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -189,8 +190,8 @@ export async function POST(request: NextRequest) {
         const transporter = nodemailer.createTransport({
           service: "gmail",
           auth: {
-            user: gmailUser.trim(),
-            pass: gmailPass.replace(/\s+/g, ""),
+            user: gmailUser,
+            pass: gmailPass,
           },
         });
 

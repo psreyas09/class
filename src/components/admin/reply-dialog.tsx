@@ -72,17 +72,20 @@ export function ReplyDialog({
       }
 
       // Notify the student who registered this complaint about the update
-      fetch("/api/complaints/notify-student", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          complaintId: complaint.id,
-          status,
-          replyText: trimmedReply,
-        }),
-      }).catch((err) => {
-        console.error("Failed to notify student:", err);
-      });
+      try {
+        await fetch("/api/complaints/notify-student", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({
+            complaintId: complaint.id,
+            status,
+            replyText: trimmedReply,
+          }),
+        });
+      } catch (err) {
+        console.warn("Failed to dispatch student notification:", err);
+      }
 
       onSuccess(complaint.id, status, trimmedReply);
       onClose();
