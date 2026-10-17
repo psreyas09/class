@@ -66,8 +66,10 @@ export function Navbar({
         .eq("key", "resources_drive_url")
         .maybeSingle();
 
-      if (data?.value) {
+      if (data?.value && data.value !== "https://drive.google.com") {
         setDriveUrl(data.value);
+      } else if (!data?.value || data.value === "https://drive.google.com") {
+        setDriveUrl("https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU");
       }
 
       // Check admin status

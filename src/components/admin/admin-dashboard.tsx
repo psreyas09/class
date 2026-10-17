@@ -81,8 +81,12 @@ export function AdminDashboard({
   const [removingEmail, setRemovingEmail] = useState<string | null>(null);
 
   // Settings state
-  const [driveUrl, setDriveUrl] = useState(initialDriveUrl);
-  const [savedDriveUrl, setSavedDriveUrl] = useState(initialDriveUrl);
+  const effectiveDriveUrl =
+    initialDriveUrl && initialDriveUrl !== "https://drive.google.com"
+      ? initialDriveUrl
+      : "https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU";
+  const [driveUrl, setDriveUrl] = useState(effectiveDriveUrl);
+  const [savedDriveUrl, setSavedDriveUrl] = useState(effectiveDriveUrl);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);

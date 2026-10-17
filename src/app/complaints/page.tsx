@@ -28,8 +28,9 @@ export default async function ComplaintsPage() {
     .maybeSingle();
 
   const driveUrl =
-    settingData?.value ||
-    "https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU";
+    settingData?.value && settingData.value !== "https://drive.google.com"
+      ? settingData.value
+      : "https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU";
 
   // Fetch user's own complaints (RLS allows only student_id = auth.uid())
   const { data: complaintsData } = await supabase
