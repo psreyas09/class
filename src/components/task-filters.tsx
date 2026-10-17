@@ -51,7 +51,7 @@ export function TaskFilters({
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search assignments, records, subjects..."
-            className="w-full pl-8 pr-8 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-[var(--card)] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 transition-colors"
+            className="w-full pl-8 pr-8 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 transition-colors"
           />
           <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2 pointer-events-none" />
           {search && (
@@ -70,11 +70,11 @@ export function TaskFilters({
           <select
             value={selectedSubject}
             onChange={(e) => onSubjectChange(e.target.value)}
-            className="px-2.5 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-[var(--card)] text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 transition-colors cursor-pointer"
+            className="px-2.5 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 transition-colors cursor-pointer"
           >
-            <option value="All">All Subjects</option>
+            <option value="All" className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100">All Subjects</option>
             {availableSubjects.map((sub) => (
-              <option key={sub} value={sub}>
+              <option key={sub} value={sub} className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100">
                 {sub}
               </option>
             ))}

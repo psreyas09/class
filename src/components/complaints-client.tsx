@@ -237,7 +237,7 @@ export function ComplaintsClient({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Projector loose HDMI cable in Room 302"
-                  className="w-full px-3 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
+                  className="w-full px-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
                 />
               </div>
 
@@ -248,10 +248,10 @@ export function ComplaintsClient({
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as ComplaintCategory)}
-                  className="w-full px-3 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 cursor-pointer"
+                  className="w-full px-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 cursor-pointer"
                 >
                   {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
+                    <option key={cat} value={cat} className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100">
                       {cat}
                     </option>
                   ))}
@@ -273,7 +273,7 @@ export function ComplaintsClient({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe what's wrong, room number, affected time, or specific details so CRs can follow up with faculty or administration..."
-                className="w-full px-3 py-2 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
+                className="w-full px-3 py-2 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
               />
             </div>
 
@@ -352,7 +352,7 @@ export function ComplaintsClient({
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="e.g. Rahul S. (Roll 24)"
-                    className="w-full px-3 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
+                    className="w-full px-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
                   />
                   <p className="text-[10px] text-zinc-400 mt-1">
                     This is the name CRs will see on this complaint.
@@ -392,8 +392,8 @@ export function ComplaintsClient({
               onClick={() => setFilterTab("all")}
               className={`px-3 py-1.5 rounded font-medium transition-colors ${
                 filterTab === "all"
-                  ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                  : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                  ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-950 dark:text-zinc-50 font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               }`}
             >
               All Complaints ({complaints.length})
@@ -403,8 +403,8 @@ export function ComplaintsClient({
               onClick={() => setFilterTab("mine")}
               className={`px-3 py-1.5 rounded font-medium transition-colors ${
                 filterTab === "mine"
-                  ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                  : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                  ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-950 dark:text-zinc-50 font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               }`}
             >
               My Submissions ({myComplaintsCount})
@@ -416,11 +416,11 @@ export function ComplaintsClient({
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-2.5 py-1 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-700 dark:text-zinc-300 focus:outline-none cursor-pointer"
+              className="px-2.5 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 cursor-pointer"
             >
-              <option value="All">All Categories</option>
+              <option value="All" className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100">All Categories</option>
               {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
+                <option key={cat} value={cat} className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100">
                   {cat}
                 </option>
               ))}

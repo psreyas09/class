@@ -174,7 +174,7 @@ export function TaskEditorDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Lab Experiment 4: Norton Theorem"
-              className="w-full px-3 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
+              className="w-full px-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
             />
           </div>
 
@@ -186,10 +186,10 @@ export function TaskEditorDialog({
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as TaskType)}
-                className="w-full px-3 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 cursor-pointer"
+                className="w-full px-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 cursor-pointer"
               >
                 {TASK_TYPES.map((t) => (
-                  <option key={t} value={t}>
+                  <option key={t} value={t} className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100">
                     {t}
                   </option>
                 ))}
@@ -210,7 +210,7 @@ export function TaskEditorDialog({
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="e.g. CS302 / Networks"
-                className="w-full px-3 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
+                className="w-full px-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
               />
             </div>
           </div>
@@ -228,7 +228,7 @@ export function TaskEditorDialog({
                 required
                 value={dueAtLocal}
                 onChange={(e) => setDueAtLocal(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 font-mono-numbers focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
+                className="w-full px-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono-numbers focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
               />
             </div>
           </div>
@@ -243,7 +243,7 @@ export function TaskEditorDialog({
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
                 placeholder="https://forms.google.com/... or submission portal"
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
               />
               <LinkIcon className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2 pointer-events-none" />
             </div>
@@ -262,7 +262,7 @@ export function TaskEditorDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Formatting rules, graph paper requirement, submission format..."
-              className="w-full px-3 py-2 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
+              className="w-full px-3 py-2 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
             />
           </div>
 

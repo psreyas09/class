@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  color-scheme: light;
   --background: #fbfbf9;
   --foreground: #18181b;
   --card: #ffffff;
@@ -13,6 +16,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #0f0f10;
   --foreground: #ededed;
   --card: #18181a;
@@ -22,6 +26,25 @@
   --muted-bg: #202023;
   --accent: #f59e0b; /* Amber */
   --accent-foreground: #000000;
+}
+
+/* Form Controls & Dropdown contrast fixes */
+select, option, input, textarea {
+  color-scheme: light;
+}
+
+.dark select, .dark option, .dark input, .dark textarea {
+  color-scheme: dark;
+}
+
+select, option {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+.dark select, .dark option {
+  background-color: #18181a;
+  color: #ededed;
 }
 
 body {
