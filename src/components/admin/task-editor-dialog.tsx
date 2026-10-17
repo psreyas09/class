@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Task, TaskType } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { kolkataLocalToUTC, utcToKolkataLocalInput } from "@/lib/date-utils";
@@ -34,11 +34,31 @@ export function TaskEditorDialog({
   const [subject, setSubject] = useState(task?.subject || "");
   const [description, setDescription] = useState(task?.description || "");
   const [dueAtLocal, setDueAtLocal] = useState(
-    task ? utcToKolkataLocalInput(task.due_at) : ""
+    task?.due_at ? utcToKolkataLocalInput(task.due_at) : ""
   );
   const [link, setLink] = useState(task?.link || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync state whenever editing task changes or modal opens
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title || "");
+      setType(task.type || "Assignment");
+      setSubject(task.subject || "");
+      setDescription(task.description || "");
+      setDueAtLocal(task.due_at ? utcToKolkataLocalInput(task.due_at) : "");
+      setLink(task.link || "");
+    } else {
+      setTitle("");
+      setType("Assignment");
+      setSubject("");
+      setDescription("");
+      setDueAtLocal("");
+      setLink("");
+    }
+    setError(null);
+  }, [task, isOpen]);
 
   if (!isOpen) return null;
 

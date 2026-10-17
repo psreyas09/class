@@ -883,6 +883,7 @@ export function AdminDashboard({
 
       {/* Task Editor Dialog Modal */}
       <TaskEditorDialog
+        key={editingTask ? editingTask.id : "new-task"}
         task={editingTask}
         isOpen={isTaskEditorOpen}
         onClose={() => {
@@ -894,6 +895,7 @@ export function AdminDashboard({
 
       {/* Reply to Complaint Modal */}
       <ReplyDialog
+        key={replyingComplaint ? replyingComplaint.id : "none"}
         complaint={replyingComplaint}
         isOpen={!!replyingComplaint}
         onClose={() => setReplyingComplaint(null)}
