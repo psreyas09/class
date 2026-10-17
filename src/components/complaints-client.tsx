@@ -23,6 +23,7 @@ interface ComplaintsClientProps {
   initialComplaints: Complaint[];
   currentUserId: string;
   defaultDisplayName?: string;
+  currentUserEmail?: string;
 }
 
 const CATEGORIES: ComplaintCategory[] = [
@@ -36,6 +37,7 @@ export function ComplaintsClient({
   initialComplaints,
   currentUserId,
   defaultDisplayName = "",
+  currentUserEmail,
 }: ComplaintsClientProps) {
   const router = useRouter();
   const [complaints, setComplaints] = useState<Complaint[]>(initialComplaints);
@@ -141,6 +143,7 @@ export function ComplaintsClient({
             description: trimmedDesc,
             displayName: finalDisplayName,
             isAnonymous,
+            studentEmail: currentUserEmail,
           }),
         });
       } catch (err) {

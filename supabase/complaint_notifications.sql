@@ -1,11 +1,8 @@
 -- ==============================================================================
--- ClassDesk: Complaint Notification Helper RPCs
--- 1. get_cr_notification_emails: allows authenticated students submitting a complaint
---    to retrieve CR emails for dispatch without exposing the full admins table.
--- 2. get_complaint_notification_info: allows authenticated admins replying to a complaint
---    to retrieve the student's email securely to send an email update.
+-- ClassDesk: Complaint Notification Helper RPCs & Policies
 -- ==============================================================================
 
+-- 1. Helper function allowing authenticated students to retrieve CR emails
 CREATE OR REPLACE FUNCTION public.get_cr_notification_emails()
 RETURNS TABLE (email TEXT)
 LANGUAGE plpgsql
@@ -24,6 +21,16 @@ $$;
 REVOKE ALL ON FUNCTION public.get_cr_notification_emails() FROM anon, public;
 GRANT EXECUTE ON FUNCTION public.get_cr_notification_emails() TO authenticated;
 
+-- 2. Direct read policy on admins table so server and RPCs can reliably fetch CR emails
+GRANT SELECT ON public.admins TO authenticated;
+DROP POLICY IF EXISTS "Allow authenticated to view admin emails" ON public.admins;
+CREATE POLICY "Allow authenticated to view admin emails"
+ON public.admins FOR SELECT
+TO authenticated
+USING (true);
+
+-- 3. Helper function allowing authenticated admins replying to a complaint
+--    to retrieve the student's email securely to send an email update.
 CREATE OR REPLACE FUNCTION public.get_complaint_notification_info(p_complaint_id UUID)
 RETURNS TABLE (
   student_email TEXT,
@@ -55,3 +62,6 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_complaint_notification_info(UUID) FROM anon, public;
 GRANT EXECUTE ON FUNCTION public.get_complaint_notification_info(UUID) TO authenticated;
+
+-- 4. Reload PostgREST schema cache
+NOTIFY pgrst, 'reload schema';

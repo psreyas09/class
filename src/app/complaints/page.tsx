@@ -67,6 +67,7 @@ export default async function ComplaintsPage() {
         <ComplaintsClient
           initialComplaints={complaints}
           currentUserId={userId}
+          currentUserEmail={userEmail ?? undefined}
           defaultDisplayName={defaultDisplayName}
         />
       </main>
