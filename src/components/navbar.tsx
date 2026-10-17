@@ -15,8 +15,10 @@ import {
   Moon,
   LogOut,
   GraduationCap,
+  HelpCircle,
 } from "lucide-react";
 import { PushToggle } from "@/components/push-toggle";
+import { OnboardingGuideModal } from "@/components/onboarding-guide-modal";
 
 interface NavbarProps {
   initialDriveUrl?: string;
@@ -38,11 +40,22 @@ export function Navbar({
   const [driveUrl, setDriveUrl] = useState(initialDriveUrl);
   const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
   const [currentKolkataTime, setCurrentKolkataTime] = useState("");
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   const appName = process.env.NEXT_PUBLIC_APP_NAME || "ClassDesk";
 
   useEffect(() => {
     setMounted(true);
+
+    // Check if new joiner has already dismissed the platform guide
+    try {
+      const dismissed = localStorage.getItem("classdesk_guide_dismissed_v1");
+      if (!dismissed) {
+        setIsGuideOpen(true);
+      }
+    } catch {
+      // Ignored in SSR
+    }
 
     // Live clock in Asia/Kolkata
     function updateClock() {
@@ -163,6 +176,19 @@ export function Navbar({
               </button>
             )}
 
+            {/* Platform Guide / Tutorial Button */}
+            {mounted && (
+              <button
+                type="button"
+                onClick={() => setIsGuideOpen(true)}
+                title="ClassDesk Guide & Help"
+                aria-label="Platform Guide"
+                className="w-7 h-7 rounded border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
+            )}
+
             {/* User / Sign Out */}
             <div className="flex items-center gap-2 border-l border-zinc-200 dark:border-zinc-800 pl-2 sm:pl-2.5">
               <div className="hidden sm:flex flex-col text-right">
@@ -214,6 +240,14 @@ export function Navbar({
           );
         })}
       </nav>
+
+      {/* Onboarding Guide Modal */}
+      {mounted && (
+        <OnboardingGuideModal
+          isOpen={isGuideOpen}
+          onClose={() => setIsGuideOpen(false)}
+        />
+      )}
     </>
   );
 }
