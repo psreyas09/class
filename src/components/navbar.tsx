@@ -16,6 +16,7 @@ import {
   LogOut,
   GraduationCap,
 } from "lucide-react";
+import { PushToggle } from "@/components/push-toggle";
 
 interface NavbarProps {
   initialDriveUrl?: string;
@@ -142,6 +143,9 @@ export function Navbar({
               <FolderOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span className="font-medium">Resources</span>
             </a>
+
+            {/* Push Notification Toggle */}
+            {mounted && <PushToggle />}
 
             {/* Theme Toggle */}
             {mounted && (

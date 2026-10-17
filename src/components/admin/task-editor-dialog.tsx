@@ -126,6 +126,22 @@ export function TaskEditorDialog({
           return;
         }
 
+        // Trigger notification broadcast asynchronously (Email via Resend & Web Push)
+        fetch("/api/tasks/broadcast", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: trimmedTitle,
+            type,
+            subject: trimmedSubject,
+            description: trimmedDesc,
+            due_at: dueAtUTC,
+            link: trimmedLink,
+          }),
+        }).catch((err) =>
+          console.warn("Task notification broadcast failed:", err)
+        );
+
         onSaved(data as Task, true);
       }
 
