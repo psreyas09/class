@@ -210,15 +210,17 @@ DROP POLICY IF EXISTS "Replies viewable by admin or complaint owner" ON public.c
 CREATE POLICY "Replies viewable by admin or complaint owner" ON public.complaint_replies FOR SELECT TO authenticated USING (public.is_admin() OR EXISTS (SELECT 1 FROM public.complaints c WHERE c.id = complaint_replies.complaint_id AND c.student_id = auth.uid()));
 
 -- 6. VIEWS (SECURITY BARRIER)
-CREATE OR REPLACE VIEW public.admin_complaints_view WITH (security_barrier = true) AS
+DROP VIEW IF EXISTS public.admin_complaints_view;
+CREATE VIEW public.admin_complaints_view WITH (security_barrier = true) AS
 SELECT
-  c.id, c.title, c.category, c.description, c.display_name, c.is_anonymous, c.status, c.created_at, c.updated_at,
+  c.id, c.title, c.category, c.description, c.is_anonymous, c.status, c.created_at, c.updated_at,
   CASE WHEN c.is_anonymous THEN NULL ELSE c.student_id END AS student_id,
   CASE 
     WHEN c.is_anonymous THEN 'Anonymous Student' 
     ELSE COALESCE(NULLIF(trim(c.display_name), ''), p.full_name, split_part(p.email, '@', 1), 'Student') 
   END AS student_name,
-  CASE WHEN c.is_anonymous THEN NULL ELSE p.email END AS student_email
+  CASE WHEN c.is_anonymous THEN NULL ELSE p.email END AS student_email,
+  c.display_name
 FROM public.complaints c
 LEFT JOIN public.profiles p ON c.student_id = p.id
 WHERE public.is_admin();
