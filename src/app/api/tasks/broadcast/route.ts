@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, subject, type, due_at, link, description } = body;
+    const { title, subject, type, due_at, link, description, isUpdate } = body;
 
     if (!title || !subject || !due_at) {
       return NextResponse.json(
@@ -80,6 +80,13 @@ export async function POST(request: NextRequest) {
           .filter((e): e is string => !!e && e.includes("@"));
 
         if (recipients.length > 0) {
+          const actionSubject = `[${appName}] ${isUpdate ? "Updated" : "New"} ${type}: ${subject} - ${title}`;
+          const headerTitle = `${appName} • ${isUpdate ? "Task Revision Update" : "Classroom Alert"}`;
+          const badgeText = isUpdate ? `Updated ${type}` : type;
+          const badgeStyle = isUpdate
+            ? "background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;"
+            : "background: #fef3c7; color: #92400e;";
+
           const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -90,7 +97,7 @@ export async function POST(request: NextRequest) {
                   .container { max-width: 540px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden; }
                   .header { background: #18181b; color: #ffffff; padding: 18px 24px; }
                   .header h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
-                  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: #fef3c7; color: #92400e; margin-bottom: 8px; }
+                  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-bottom: 8px; }
                   .content { padding: 24px; }
                   .task-title { font-size: 18px; font-weight: 700; color: #09090b; margin: 0 0 12px 0; }
                   .meta-row { font-size: 13px; color: #52525b; margin: 6px 0; }
@@ -103,10 +110,10 @@ export async function POST(request: NextRequest) {
               <body>
                 <div class="container">
                   <div class="header">
-                    <h1>${appName} • Classroom Alert</h1>
+                    <h1>${headerTitle}</h1>
                   </div>
                   <div class="content">
-                    <span class="badge">${type}</span>
+                    <span class="badge" style="${badgeStyle}">${badgeText}</span>
                     <h2 class="task-title">${title}</h2>
                     <div class="meta-row"><strong>Subject:</strong> ${subject}</div>
                     <div class="meta-row"><strong>Due Date:</strong> ${formattedDue}</div>
@@ -148,7 +155,7 @@ export async function POST(request: NextRequest) {
                 await transporter.sendMail({
                   from: `"${appName}" <${gmailUser}>`,
                   to: recipient,
-                  subject: `[${appName}] New ${type}: ${subject} - ${title}`,
+                  subject: actionSubject,
                   html: htmlContent,
                 });
                 emailsSent++;
@@ -167,7 +174,7 @@ export async function POST(request: NextRequest) {
                 await resend.emails.send({
                   from: fromEmail,
                   to: recipient,
-                  subject: `[${appName}] New ${type}: ${subject} - ${title}`,
+                  subject: actionSubject,
                   html: htmlContent,
                 });
                 emailsSent++;
@@ -194,8 +201,8 @@ export async function POST(request: NextRequest) {
 
       if (subs && subs.length > 0) {
         const payload = JSON.stringify({
-          title: `New Task: ${subject}`,
-          body: `${title} • Due ${formattedDue}`,
+          title: `${isUpdate ? "Updated Task" : "New Task"}: ${subject}`,
+          body: `${title} • Due ${formattedDue}${isUpdate ? " (Updated)" : ""}`,
           url: "/",
           tag: `task-${Date.now()}`,
         });

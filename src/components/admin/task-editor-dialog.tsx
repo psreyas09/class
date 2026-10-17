@@ -119,6 +119,23 @@ export function TaskEditorDialog({
           return;
         }
 
+        // Trigger notification broadcast for the task modification
+        fetch("/api/tasks/broadcast", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: trimmedTitle,
+            type,
+            subject: trimmedSubject,
+            description: trimmedDesc,
+            due_at: dueAtUTC,
+            link: trimmedLink,
+            isUpdate: true,
+          }),
+        }).catch((err) =>
+          console.warn("Task update notification broadcast failed:", err)
+        );
+
         onSaved(data as Task, false);
       } else {
         const {
@@ -157,6 +174,7 @@ export function TaskEditorDialog({
             description: trimmedDesc,
             due_at: dueAtUTC,
             link: trimmedLink,
+            isUpdate: false,
           }),
         }).catch((err) =>
           console.warn("Task notification broadcast failed:", err)
