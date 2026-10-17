@@ -33,10 +33,16 @@ export default function LoginPage() {
           return;
         }
 
+        const callbackUrl =
+          typeof window !== "undefined"
+            ? `${window.location.origin}/auth/callback`
+            : "https://class-chi-topaz.vercel.app/auth/callback";
+
         const { data, error } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(),
           password,
           options: {
+            emailRedirectTo: callbackUrl,
             data: {
               full_name: fullName.trim(),
             },
