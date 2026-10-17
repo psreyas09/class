@@ -61,14 +61,15 @@ export async function POST(request: NextRequest) {
     let pushSent = 0;
 
     // =========================================================================
-    // OPTION 1: Resend Email Broadcast
+    // OPTION 1: Email Broadcast (Supports Gmail SMTP or Resend)
     // =========================================================================
+    const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER;
+    const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
     const resendApiKey = process.env.RESEND_API_KEY;
-    if (resendApiKey) {
-      try {
-        const resend = new Resend(resendApiKey);
 
-        // Fetch all student emails from profiles
+    if ((gmailUser && gmailPass) || resendApiKey) {
+      try {
+        // Fetch all verified student emails from profiles
         const { data: profiles } = await supabase
           .from("profiles")
           .select("email, full_name")
@@ -79,9 +80,6 @@ export async function POST(request: NextRequest) {
           .filter((e): e is string => !!e && e.includes("@"));
 
         if (recipients.length > 0) {
-          const fromEmail =
-            process.env.RESEND_FROM_EMAIL || "ClassDesk <onboarding@resend.dev>";
-
           const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -134,26 +132,56 @@ export async function POST(request: NextRequest) {
             </html>
           `;
 
-          // Send in batches of up to 50 recipients using Resend batch or loop
-          for (const recipient of recipients) {
-            try {
-              await resend.emails.send({
-                from: fromEmail,
-                to: recipient,
-                subject: `[${appName}] New ${type}: ${subject} - ${title}`,
-                html: htmlContent,
-              });
-              emailsSent++;
-            } catch (err) {
-              console.error(`Failed to send email to ${recipient}:`, err);
+          // Prioritize Gmail SMTP (Sends to ALL emails without needing a domain)
+          if (gmailUser && gmailPass) {
+            const nodemailer = await import("nodemailer");
+            const transporter = nodemailer.createTransport({
+              service: "gmail",
+              auth: {
+                user: gmailUser,
+                pass: gmailPass,
+              },
+            });
+
+            for (const recipient of recipients) {
+              try {
+                await transporter.sendMail({
+                  from: `"${appName}" <${gmailUser}>`,
+                  to: recipient,
+                  subject: `[${appName}] New ${type}: ${subject} - ${title}`,
+                  html: htmlContent,
+                });
+                emailsSent++;
+              } catch (err) {
+                console.error(`Gmail SMTP send failed for ${recipient}:`, err);
+              }
+            }
+          } else if (resendApiKey) {
+            // Fallback to Resend
+            const resend = new Resend(resendApiKey);
+            const fromEmail =
+              process.env.RESEND_FROM_EMAIL || "ClassDesk <onboarding@resend.dev>";
+
+            for (const recipient of recipients) {
+              try {
+                await resend.emails.send({
+                  from: fromEmail,
+                  to: recipient,
+                  subject: `[${appName}] New ${type}: ${subject} - ${title}`,
+                  html: htmlContent,
+                });
+                emailsSent++;
+              } catch (err) {
+                console.error(`Resend send failed for ${recipient}:`, err);
+              }
             }
           }
         }
       } catch (err) {
-        console.error("Resend broadcast error:", err);
+        console.error("Email broadcast error:", err);
       }
     } else {
-      console.info("RESEND_API_KEY not set. Skipping email broadcast.");
+      console.info("Neither Gmail SMTP nor Resend configured. Skipping email broadcast.");
     }
 
     // =========================================================================
