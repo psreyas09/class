@@ -71,6 +71,19 @@ export function ReplyDialog({
         return;
       }
 
+      // Notify the student who registered this complaint about the update
+      fetch("/api/complaints/notify-student", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          complaintId: complaint.id,
+          status,
+          replyText: trimmedReply,
+        }),
+      }).catch((err) => {
+        console.error("Failed to notify student:", err);
+      });
+
       onSuccess(complaint.id, status, trimmedReply);
       onClose();
     } catch (err: unknown) {
