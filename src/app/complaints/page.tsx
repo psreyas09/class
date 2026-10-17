@@ -46,6 +46,9 @@ export default async function ComplaintsPage() {
     .eq("id", user.id)
     .maybeSingle();
 
+  const defaultDisplayName =
+    profile?.full_name || user.email?.split("@")[0] || "";
+
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)]">
       <Navbar
@@ -56,7 +59,11 @@ export default async function ComplaintsPage() {
       />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 pb-20 md:pb-12">
-        <ComplaintsClient initialComplaints={complaints} currentUserId={user.id} />
+        <ComplaintsClient
+          initialComplaints={complaints}
+          currentUserId={user.id}
+          defaultDisplayName={defaultDisplayName}
+        />
       </main>
     </div>
   );

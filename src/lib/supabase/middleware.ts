@@ -66,12 +66,14 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .maybeSingle();
 
-    const isApproved = profile?.is_approved ?? false;
+    // All registered students can access immediately unless explicitly revoked (is_approved === false)
+    const isApproved = profile ? profile.is_approved : true;
 
-    // Call RPC or check if admin
+    // Primary admin check fallback + Supabase RPC check
+    const isPrimaryEmail = user.email?.toLowerCase() === "psreyas09@gmail.com";
     const { data: isAdmin } = await supabase.rpc("is_admin");
 
-    const hasAccess = isApproved || !!isAdmin;
+    const hasAccess = isApproved || !!isAdmin || isPrimaryEmail;
 
     if (!hasAccess && !isWaitingRoute) {
       const url = request.nextUrl.clone();
@@ -85,8 +87,8 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // Protect /admin: require admin role
-    if (pathname.startsWith("/admin") && !isAdmin) {
+    // Protect /admin: require admin role or primary admin email
+    if (pathname.startsWith("/admin") && !isAdmin && !isPrimaryEmail) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);

@@ -16,11 +16,13 @@ import {
   XCircle,
   CornerDownRight,
   ShieldCheck,
+  User,
 } from "lucide-react";
 
 interface ComplaintsClientProps {
   initialComplaints: Complaint[];
   currentUserId: string;
+  defaultDisplayName?: string;
 }
 
 const CATEGORIES: ComplaintCategory[] = [
@@ -33,6 +35,7 @@ const CATEGORIES: ComplaintCategory[] = [
 export function ComplaintsClient({
   initialComplaints,
   currentUserId,
+  defaultDisplayName = "",
 }: ComplaintsClientProps) {
   const router = useRouter();
   const [complaints, setComplaints] = useState<Complaint[]>(initialComplaints);
@@ -43,7 +46,8 @@ export function ComplaintsClient({
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<ComplaintCategory>("Infrastructure");
   const [description, setDescription] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [submissionMode, setSubmissionMode] = useState<"named" | "anonymous">("named");
+  const [displayName, setDisplayName] = useState(defaultDisplayName);
   const [formError, setFormError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -52,6 +56,8 @@ export function ComplaintsClient({
 
     const trimmedTitle = title.trim();
     const trimmedDesc = description.trim();
+    const isAnonymous = submissionMode === "anonymous";
+    let finalDisplayName: string | null = null;
 
     if (!trimmedTitle) {
       setFormError("Please enter a title for your complaint.");
@@ -70,6 +76,14 @@ export function ComplaintsClient({
       return;
     }
 
+    if (!isAnonymous) {
+      finalDisplayName = displayName.trim() || defaultDisplayName || "Student";
+      if (finalDisplayName.length > 100) {
+        setFormError("Display name must be 100 characters or less.");
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
       const supabase = createClient();
@@ -81,6 +95,7 @@ export function ComplaintsClient({
           title: trimmedTitle,
           category,
           description: trimmedDesc,
+          display_name: finalDisplayName,
           is_anonymous: isAnonymous,
           status: "Open",
         })
@@ -97,7 +112,7 @@ export function ComplaintsClient({
       setComplaints([data as Complaint, ...complaints]);
       setTitle("");
       setDescription("");
-      setIsAnonymous(false);
+      setSubmissionMode("named");
       setShowForm(false);
       setIsSubmitting(false);
       router.refresh();
@@ -244,25 +259,88 @@ export function ComplaintsClient({
               />
             </div>
 
-            {/* Anonymous Toggle */}
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="checkbox"
-                id="anon-toggle"
-                checked={isAnonymous}
-                onChange={(e) => setIsAnonymous(e.target.checked)}
-                className="rounded border-zinc-300 dark:border-zinc-700 text-amber-600 focus:ring-amber-500"
-              />
-              <label
-                htmlFor="anon-toggle"
-                className="text-xs text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5 cursor-pointer select-none"
-              >
-                <EyeOff className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Submit anonymously</span>
-                <span className="text-[11px] text-zinc-400">
-                  (CRs will NOT see your name or email, but you can still view replies here)
-                </span>
+            {/* Identity Selection: Display Name vs Anonymous */}
+            <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                Identity on Complaint
               </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <label
+                  className={`flex items-start gap-2.5 p-3 rounded border cursor-pointer transition-colors ${
+                    submissionMode === "named"
+                      ? "border-amber-500/80 bg-amber-500/5 dark:bg-amber-500/10"
+                      : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="submission-mode"
+                    value="named"
+                    checked={submissionMode === "named"}
+                    onChange={() => setSubmissionMode("named")}
+                    className="mt-0.5 text-amber-600 focus:ring-amber-500"
+                  />
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      <span>With Display Name</span>
+                    </span>
+                    <p className="text-[11px] text-zinc-500 leading-normal">
+                      CRs will see your chosen display name and can follow up directly.
+                    </p>
+                  </div>
+                </label>
+
+                <label
+                  className={`flex items-start gap-2.5 p-3 rounded border cursor-pointer transition-colors ${
+                    submissionMode === "anonymous"
+                      ? "border-amber-500/80 bg-amber-500/5 dark:bg-amber-500/10"
+                      : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="submission-mode"
+                    value="anonymous"
+                    checked={submissionMode === "anonymous"}
+                    onChange={() => setSubmissionMode("anonymous")}
+                    className="mt-0.5 text-amber-600 focus:ring-amber-500"
+                  />
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <EyeOff className="w-3.5 h-3.5 text-zinc-500" />
+                      <span>Post Anonymously</span>
+                    </span>
+                    <p className="text-[11px] text-zinc-500 leading-normal">
+                      100% confidential. Your name and email are masked to CRs.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {submissionMode === "named" && (
+                <div className="pt-1.5">
+                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Display Name{" "}
+                    <span className="text-[10px] text-zinc-400 font-mono-numbers">
+                      ({displayName.length}/100)
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={100}
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="e.g. Rahul S. (Roll 24)"
+                    className="w-full px-3 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
+                  />
+                  <p className="text-[10px] text-zinc-400 mt-1">
+                    This is the name CRs will see on this complaint.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
@@ -317,10 +395,15 @@ export function ComplaintsClient({
                     <span className="px-1.5 py-0.5 text-[10px] font-mono-numbers font-medium rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                       {c.category}
                     </span>
-                    {c.is_anonymous && (
+                    {c.is_anonymous ? (
                       <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono-numbers rounded border border-zinc-200 dark:border-zinc-800 text-zinc-500">
                         <EyeOff className="w-2.5 h-2.5" />
                         Anonymous
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono-numbers rounded border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
+                        <User className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+                        {c.display_name || "With Name"}
                       </span>
                     )}
                     <span className="text-[11px] font-mono-numbers text-zinc-400">

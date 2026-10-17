@@ -7,6 +7,7 @@ import {
   AdminComplaintViewRow,
   Profile,
   ComplaintStatus,
+  Admin,
 } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { formatKolkataDateTime, formatKolkataShort } from "@/lib/date-utils";
@@ -27,6 +28,7 @@ import {
   X,
   ExternalLink,
   ShieldCheck,
+  ShieldAlert,
   CheckSquare,
 } from "lucide-react";
 
@@ -36,9 +38,11 @@ interface AdminDashboardProps {
   initialComplaints: AdminComplaintViewRow[];
   initialProfiles: Profile[];
   initialDriveUrl: string;
+  initialCrList?: Admin[];
+  isPrimaryAdmin?: boolean;
 }
 
-type TabType = "tasks" | "archive" | "complaints" | "approvals" | "settings";
+type TabType = "tasks" | "archive" | "complaints" | "approvals" | "crs" | "settings";
 
 export function AdminDashboard({
   initialActiveTasks,
@@ -46,6 +50,8 @@ export function AdminDashboard({
   initialComplaints,
   initialProfiles,
   initialDriveUrl,
+  initialCrList = [],
+  isPrimaryAdmin = false,
 }: AdminDashboardProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("tasks");
@@ -66,12 +72,78 @@ export function AdminDashboard({
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
+  // CR Management state
+  const [crList, setCrList] = useState<Admin[]>(initialCrList);
+  const [newCrEmail, setNewCrEmail] = useState("");
+  const [crLoading, setCrLoading] = useState(false);
+  const [crMessage, setCrMessage] = useState<string | null>(null);
+  const [crError, setCrError] = useState<string | null>(null);
+  const [removingEmail, setRemovingEmail] = useState<string | null>(null);
+
   // Settings state
   const [driveUrl, setDriveUrl] = useState(initialDriveUrl);
   const [savedDriveUrl, setSavedDriveUrl] = useState(initialDriveUrl);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  // ================= CR MANAGEMENT ACTIONS =================
+  async function handleAddCr(e: React.FormEvent) {
+    e.preventDefault();
+    const cleanEmail = newCrEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setCrError("Please enter a valid email address.");
+      return;
+    }
+
+    setCrLoading(true);
+    setCrError(null);
+    setCrMessage(null);
+
+    const supabase = createClient();
+    const { error } = await supabase.rpc("admin_add_cr", { p_email: cleanEmail });
+
+    if (error) {
+      setCrError(error.message);
+    } else {
+      setCrMessage(`Added ${cleanEmail} as Class Representative.`);
+      setNewCrEmail("");
+      if (!crList.some((a) => a.email.toLowerCase() === cleanEmail)) {
+        setCrList([
+          ...crList,
+          { email: cleanEmail, role: "cr", created_at: new Date().toISOString() },
+        ]);
+      }
+      router.refresh();
+    }
+    setCrLoading(false);
+  }
+
+  async function handleRemoveCr(email: string) {
+    if (email.toLowerCase() === "psreyas09@gmail.com") {
+      alert("Cannot remove primary admin account.");
+      return;
+    }
+    if (!confirm(`Are you sure you want to remove ${email} as Class Representative?`)) {
+      return;
+    }
+
+    setRemovingEmail(email);
+    setCrError(null);
+    setCrMessage(null);
+
+    const supabase = createClient();
+    const { error } = await supabase.rpc("admin_remove_cr", { p_email: email });
+
+    if (error) {
+      setCrError(error.message);
+    } else {
+      setCrMessage(`Removed ${email} from Class Representatives.`);
+      setCrList(crList.filter((a) => a.email.toLowerCase() !== email.toLowerCase()));
+      router.refresh();
+    }
+    setRemovingEmail(null);
+  }
 
   // ================= TASK ACTIONS =================
   async function handleDeleteTask(taskId: string, isArchive: boolean) {
@@ -320,6 +392,18 @@ export function AdminDashboard({
         </button>
 
         <button
+          onClick={() => setActiveTab("crs")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors whitespace-nowrap ${
+            activeTab === "crs"
+              ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium"
+              : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          <span>CR Admins ({crList.length})</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab("settings")}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors whitespace-nowrap ${
             activeTab === "settings"
@@ -541,7 +625,7 @@ export function AdminDashboard({
       {activeTab === "approvals" && (
         <section className="space-y-4">
           <div className="p-3 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 text-xs text-zinc-500">
-            Registered students must be approved by a CR before they can access class tasks or the Resources button.
+            All registered students automatically receive access upon signup. You can review enrolled students below or revoke access if needed.
           </div>
 
           <div className="border border-zinc-200 dark:border-zinc-800 rounded overflow-hidden">
@@ -572,7 +656,7 @@ export function AdminDashboard({
                       ) : (
                         <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 text-[11px] font-medium">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                          Pending
+                          Revoked
                         </span>
                       )}
                     </td>
@@ -591,7 +675,7 @@ export function AdminDashboard({
                           ? "Saving..."
                           : p.is_approved
                           ? "Revoke Access"
-                          : "Approve Student"}
+                          : "Approve Access"}
                       </button>
                     </td>
                   </tr>
@@ -602,7 +686,133 @@ export function AdminDashboard({
         </section>
       )}
 
-      {/* ================= TAB 5: SETTINGS ================= */}
+      {/* ================= TAB 5: CR & ADMIN MANAGEMENT ================= */}
+      {activeTab === "crs" && (
+        <section className="space-y-4">
+          <div className="border border-zinc-200 dark:border-zinc-800 bg-[var(--card)] p-4 sm:p-5 rounded space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span>Class Representative & Admin Management</span>
+                </h2>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  CR accounts have full access to manage tasks, resolve student complaints, and update class links.
+                </p>
+              </div>
+              <div className="text-xs font-mono-numbers px-2.5 py-1 rounded border border-amber-300/60 dark:border-amber-900/40 bg-amber-500/10 text-amber-800 dark:text-amber-400 shrink-0">
+                Primary Admin: psreyas09@gmail.com
+              </div>
+            </div>
+          </div>
+
+          {crError && (
+            <div className="p-2.5 rounded border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 text-xs text-red-600 dark:text-red-400">
+              {crError}
+            </div>
+          )}
+
+          {crMessage && (
+            <div className="p-2.5 rounded border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/20 text-xs text-emerald-700 dark:text-emerald-400">
+              {crMessage}
+            </div>
+          )}
+
+          {/* Add CR Form - Primary Admin only */}
+          {isPrimaryAdmin ? (
+            <div className="border border-zinc-200 dark:border-zinc-800 bg-[var(--card)] p-4 sm:p-5 rounded space-y-3">
+              <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider font-mono-numbers flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Add New Class Representative</span>
+              </h3>
+              <form onSubmit={handleAddCr} className="flex flex-col sm:flex-row gap-2.5">
+                <input
+                  type="email"
+                  required
+                  value={newCrEmail}
+                  onChange={(e) => setNewCrEmail(e.target.value)}
+                  placeholder="cr_college_email@domain.edu"
+                  className="flex-1 px-3 py-1.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
+                />
+                <button
+                  type="submit"
+                  disabled={crLoading}
+                  className="px-3.5 py-1.5 text-xs font-medium rounded bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 transition-colors disabled:opacity-60 shrink-0"
+                >
+                  {crLoading ? "Adding..." : "Add Representative"}
+                </button>
+              </form>
+              <p className="text-[11px] text-zinc-400">
+                Adding an email grants this person CR dashboard privileges immediately when they log in.
+              </p>
+            </div>
+          ) : (
+            <div className="p-3 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 text-xs text-zinc-500 flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-zinc-400 shrink-0" />
+              <span>Only the Primary Admin (<strong>psreyas09@gmail.com</strong>) can add or remove Class Representatives.</span>
+            </div>
+          )}
+
+          {/* Active Admins / CRs Table */}
+          <div className="border border-zinc-200 dark:border-zinc-800 rounded overflow-hidden">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-zinc-100 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono-numbers">
+                <tr>
+                  <th className="py-2.5 px-3">Account Email</th>
+                  <th className="py-2.5 px-3">Role</th>
+                  <th className="py-2.5 px-3">Assigned Date</th>
+                  {isPrimaryAdmin && <th className="py-2.5 px-3 text-right">Action</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                {crList.map((admin) => {
+                  const isPrimary = admin.email.toLowerCase() === "psreyas09@gmail.com" || admin.role === "primary";
+                  return (
+                    <tr key={admin.email} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30">
+                      <td className="py-2.5 px-3 font-mono-numbers font-medium text-zinc-900 dark:text-zinc-100">
+                        {admin.email}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        {isPrimary ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono-numbers font-medium bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-300/60 dark:border-amber-900/40">
+                            <ShieldCheck className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                            Primary Admin
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono-numbers font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                            Class Representative
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3 font-mono-numbers text-zinc-500">
+                        {formatKolkataShort(admin.created_at)}
+                      </td>
+                      {isPrimaryAdmin && (
+                        <td className="py-2.5 px-3 text-right">
+                          {isPrimary ? (
+                            <span className="text-[11px] text-zinc-400 italic">Protected</span>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={removingEmail === admin.email}
+                              onClick={() => handleRemoveCr(admin.email)}
+                              className="px-2.5 py-1 text-xs rounded border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-red-600 hover:border-red-300 transition-colors"
+                            >
+                              {removingEmail === admin.email ? "Removing..." : "Remove CR"}
+                            </button>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {/* ================= TAB 6: SETTINGS ================= */}
       {activeTab === "settings" && (
         <section className="max-w-xl space-y-4">
           <div className="border border-zinc-200 dark:border-zinc-800 bg-[var(--card)] p-5 rounded space-y-4">

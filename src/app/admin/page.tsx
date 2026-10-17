@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
-import { Task, AdminComplaintViewRow, Profile } from "@/lib/types";
+import { Task, AdminComplaintViewRow, Profile, Admin } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +18,30 @@ export default async function AdminPage() {
   }
 
   // Strict backend admin check
+  const isPrimary = user.email?.toLowerCase() === "psreyas09@gmail.com";
   const { data: isAdmin } = await supabase.rpc("is_admin");
-  if (!isAdmin) {
+  if (!isAdmin && !isPrimary) {
     redirect("/");
+  }
+
+  // Fetch CR list
+  let crList: Admin[] = [];
+  try {
+    const { data: crData, error } = await supabase.rpc("admin_get_cr_list");
+    if (!error && crData) {
+      crList = crData as Admin[];
+    }
+  } catch {
+    // fallback if migration not run yet
+  }
+
+  // Ensure primary admin is listed
+  if (!crList.some((a) => a.email.toLowerCase() === "psreyas09@gmail.com")) {
+    crList.unshift({
+      email: "psreyas09@gmail.com",
+      role: "primary",
+      created_at: new Date().toISOString(),
+    });
   }
 
   // Fetch Drive link
@@ -80,6 +101,8 @@ export default async function AdminPage() {
           initialComplaints={(complaintsData as AdminComplaintViewRow[]) ?? []}
           initialProfiles={(profilesData as Profile[]) ?? []}
           initialDriveUrl={driveUrl}
+          initialCrList={crList}
+          isPrimaryAdmin={isPrimary}
         />
       </main>
     </div>

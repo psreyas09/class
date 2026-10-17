@@ -29,6 +29,7 @@ export interface Profile {
 
 export interface Admin {
   email: string;
+  role?: "primary" | "cr";
   created_at: string;
 }
 
@@ -59,6 +60,7 @@ export interface Complaint {
   title: string;
   category: ComplaintCategory;
   description: string;
+  display_name?: string | null;
   is_anonymous: boolean;
   status: ComplaintStatus;
   created_at: string;
@@ -80,6 +82,7 @@ export interface AdminComplaintViewRow {
   title: string;
   category: ComplaintCategory;
   description: string;
+  display_name?: string | null;
   is_anonymous: boolean;
   status: ComplaintStatus;
   created_at: string;
