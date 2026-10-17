@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { Task, TaskType } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
-import { kolkataLocalToUTC, utcToKolkataLocalInput } from "@/lib/date-utils";
+import { kolkataLocalToUTC, toKolkataDate } from "@/lib/date-utils";
+import { format } from "date-fns";
 import { X, Calendar, Link as LinkIcon } from "lucide-react";
 
 interface TaskEditorDialogProps {
@@ -21,6 +22,27 @@ const TASK_TYPES: TaskType[] = [
   "Other",
 ];
 
+function parseTaskDueDate(isoString?: string | null): string {
+  if (!isoString) return "";
+  try {
+    const zoned = toKolkataDate(isoString);
+    return format(zoned, "yyyy-MM-dd");
+  } catch {
+    return "";
+  }
+}
+
+function parseTaskDueTime(isoString?: string | null): string {
+  if (!isoString) return "";
+  try {
+    const zoned = toKolkataDate(isoString);
+    const t = format(zoned, "HH:mm");
+    return t === "23:59" ? "" : t;
+  } catch {
+    return "";
+  }
+}
+
 export function TaskEditorDialog({
   task,
   isOpen,
@@ -33,9 +55,8 @@ export function TaskEditorDialog({
   const [type, setType] = useState<TaskType>(task?.type || "Assignment");
   const [subject, setSubject] = useState(task?.subject || "");
   const [description, setDescription] = useState(task?.description || "");
-  const [dueAtLocal, setDueAtLocal] = useState(
-    task?.due_at ? utcToKolkataLocalInput(task.due_at) : ""
-  );
+  const [dueDate, setDueDate] = useState(() => parseTaskDueDate(task?.due_at));
+  const [dueTime, setDueTime] = useState(() => parseTaskDueTime(task?.due_at));
   const [link, setLink] = useState(task?.link || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,14 +68,16 @@ export function TaskEditorDialog({
       setType(task.type || "Assignment");
       setSubject(task.subject || "");
       setDescription(task.description || "");
-      setDueAtLocal(task.due_at ? utcToKolkataLocalInput(task.due_at) : "");
+      setDueDate(parseTaskDueDate(task.due_at));
+      setDueTime(parseTaskDueTime(task.due_at));
       setLink(task.link || "");
     } else {
       setTitle("");
       setType("Assignment");
       setSubject("");
       setDescription("");
-      setDueAtLocal("");
+      setDueDate("");
+      setDueTime("");
       setLink("");
     }
     setError(null);
@@ -79,8 +102,8 @@ export function TaskEditorDialog({
       setError("Subject must be 60 characters or less.");
       return;
     }
-    if (!dueAtLocal) {
-      setError("Please choose a due date and time.");
+    if (!dueDate) {
+      setError("Please choose a due date.");
       return;
     }
     if (trimmedDesc.length > 2000) {
@@ -95,7 +118,8 @@ export function TaskEditorDialog({
     try {
       setLoading(true);
       const supabase = createClient();
-      const dueAtUTC = kolkataLocalToUTC(dueAtLocal);
+      const time = dueTime.trim() ? dueTime.trim() : "23:59";
+      const dueAtUTC = kolkataLocalToUTC(`${dueDate}T${time}`);
 
       if (isEditing) {
         const { data, error: updateError } = await supabase
@@ -268,20 +292,35 @@ export function TaskEditorDialog({
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center justify-between">
-              <span>Due Date & Time</span>
-              <span className="text-[10px] text-zinc-400 font-mono-numbers">
-                Asia/Kolkata (IST)
-              </span>
-            </label>
-            <div className="relative">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center justify-between">
+                <span>Due Date</span>
+                <span className="text-[10px] text-zinc-400 font-mono-numbers">
+                  IST
+                </span>
+              </label>
               <input
-                type="datetime-local"
+                type="date"
                 required
-                value={dueAtLocal}
-                onChange={(e) => setDueAtLocal(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono-numbers focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full px-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono-numbers focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center justify-between">
+                <span>Due Time</span>
+                <span className="text-[10px] text-zinc-400 font-normal">
+                  Optional (11:59 PM default)
+                </span>
+              </label>
+              <input
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                className="w-full px-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono-numbers focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 cursor-pointer"
               />
             </div>
           </div>
