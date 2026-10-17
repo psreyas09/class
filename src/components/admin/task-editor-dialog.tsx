@@ -67,7 +67,7 @@ export function TaskEditorDialog({
     setError(null);
 
     const trimmedTitle = title.trim();
-    const trimmedSubject = subject.trim();
+    const trimmedSubject = subject.trim() || "General";
     const trimmedLink = link.trim();
     const trimmedDesc = description.trim();
 
@@ -75,8 +75,8 @@ export function TaskEditorDialog({
       setError("Title is required and must be 150 characters or less.");
       return;
     }
-    if (!trimmedSubject || trimmedSubject.length > 60) {
-      setError("Subject is required and must be 60 characters or less.");
+    if (trimmedSubject.length > 60) {
+      setError("Subject must be 60 characters or less.");
       return;
     }
     if (!dueAtLocal) {
@@ -253,17 +253,16 @@ export function TaskEditorDialog({
             <div>
               <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                 Subject Code / Name{" "}
-                <span className="text-[10px] text-zinc-400 font-mono-numbers">
-                  ({subject.length}/60)
+                <span className="text-[10px] text-zinc-400 font-normal">
+                  (Optional • defaults to General)
                 </span>
               </label>
               <input
                 type="text"
-                required
                 maxLength={60}
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g. CS302 / Networks"
+                placeholder="e.g. CS302 or leave blank for General"
                 className="w-full px-3 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-amber-600 dark:focus:border-amber-500"
               />
             </div>

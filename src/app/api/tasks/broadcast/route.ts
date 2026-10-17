@@ -45,9 +45,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, subject, type, due_at, link, description, isUpdate } = body;
 
-    if (!title || !subject || !due_at) {
+    const safeSubject = subject?.trim() || "General";
+
+    if (!title || !due_at) {
       return NextResponse.json(
-        { error: "Missing required task fields" },
+        { error: "Missing required task fields (title, due_at)" },
         { status: 400 }
       );
     }
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
           .filter((e): e is string => !!e && e.includes("@"));
 
         if (recipients.length > 0) {
-          const actionSubject = `[${appName}] ${isUpdate ? "Updated" : "New"} ${type}: ${subject} - ${title}`;
+          const actionSubject = `[${appName}] ${isUpdate ? "Updated" : "New"} ${type}: ${safeSubject} - ${title}`;
           const headerTitle = `${appName} • ${isUpdate ? "Task Revision Update" : "Classroom Alert"}`;
           const badgeText = isUpdate ? `Updated ${type}` : type;
           const badgeStyle = isUpdate
@@ -115,7 +117,7 @@ export async function POST(request: NextRequest) {
                   <div class="content">
                     <span class="badge" style="${badgeStyle}">${badgeText}</span>
                     <h2 class="task-title">${title}</h2>
-                    <div class="meta-row"><strong>Subject:</strong> ${subject}</div>
+                    <div class="meta-row"><strong>Subject:</strong> ${safeSubject}</div>
                     <div class="meta-row"><strong>Due Date:</strong> ${formattedDue}</div>
                     ${
                       description
@@ -201,7 +203,7 @@ export async function POST(request: NextRequest) {
 
       if (subs && subs.length > 0) {
         const payload = JSON.stringify({
-          title: `${isUpdate ? "Updated Task" : "New Task"}: ${subject}`,
+          title: `${isUpdate ? "Updated Task" : "New Task"}: ${safeSubject}`,
           body: `${title} • Due ${formattedDue}${isUpdate ? " (Updated)" : ""}`,
           url: "/",
           tag: `task-${Date.now()}`,
