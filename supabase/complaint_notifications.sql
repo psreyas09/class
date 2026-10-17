@@ -63,5 +63,30 @@ $$;
 REVOKE ALL ON FUNCTION public.get_complaint_notification_info(UUID) FROM anon, public;
 GRANT EXECUTE ON FUNCTION public.get_complaint_notification_info(UUID) TO authenticated;
 
--- 4. Reload PostgREST schema cache
+-- 4. Admin delete complaint RPC & RLS Policy
+DROP POLICY IF EXISTS "Admins can delete complaints" ON public.complaints;
+CREATE POLICY "Admins can delete complaints"
+ON public.complaints FOR DELETE
+TO authenticated
+USING (public.is_admin());
+
+CREATE OR REPLACE FUNCTION public.admin_delete_complaint(p_complaint_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Unauthorized: only admins can delete complaints' USING ERRCODE = '42501';
+  END IF;
+
+  DELETE FROM public.complaints WHERE id = p_complaint_id;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.admin_delete_complaint(UUID) FROM anon, public;
+GRANT EXECUTE ON FUNCTION public.admin_delete_complaint(UUID) TO authenticated;
+
+-- 5. Reload PostgREST schema cache
 NOTIFY pgrst, 'reload schema';

@@ -67,6 +67,7 @@ export function AdminDashboard({
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [replyingComplaint, setReplyingComplaint] = useState<AdminComplaintViewRow | null>(null);
+  const [deletingComplaintId, setDeletingComplaintId] = useState<string | null>(null);
 
   // Approvals state
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
@@ -252,6 +253,47 @@ export function AdminDashboard({
       })
     );
     router.refresh();
+  }
+
+  async function handleDeleteComplaint(complaintId: string, title: string) {
+    if (
+      !confirm(
+        `Are you sure you want to permanently delete this complaint?\n\n"${title}"\n\nThis will remove the complaint and all its replies. This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDeletingComplaintId(complaintId);
+      const supabase = createClient();
+
+      // Try RPC first
+      const { error: rpcErr } = await supabase.rpc("admin_delete_complaint", {
+        p_complaint_id: complaintId,
+      });
+
+      if (rpcErr) {
+        // Fallback to direct delete
+        const { error: delErr } = await supabase
+          .from("complaints")
+          .delete()
+          .eq("id", complaintId);
+
+        if (delErr) {
+          alert(`Failed to delete complaint: ${delErr.message}`);
+          setDeletingComplaintId(null);
+          return;
+        }
+      }
+
+      setComplaints(complaints.filter((c) => c.id !== complaintId));
+      router.refresh();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to delete complaint");
+    } finally {
+      setDeletingComplaintId(null);
+    }
   }
 
   // ================= APPROVALS =================
@@ -606,6 +648,16 @@ export function AdminDashboard({
                         className="px-2.5 py-1 text-xs font-medium rounded bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90"
                       >
                         Reply / Resolve
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteComplaint(c.id, c.title)}
+                        disabled={deletingComplaintId === c.id}
+                        className="p-1.5 text-xs text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded border border-zinc-200 dark:border-zinc-800 transition-colors disabled:opacity-50"
+                        title="Delete complaint"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
