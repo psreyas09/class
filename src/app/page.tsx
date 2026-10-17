@@ -19,36 +19,36 @@ export default async function HomePage() {
     redirect("/login");
   }
 
-  // Fetch admin status
-  const { data: isAdmin } = await supabase.rpc("is_admin");
+  const isPrimary = user.email?.toLowerCase() === "psreyas09@gmail.com";
 
-  // Fetch Drive resources URL from settings
-  const { data: settingData } = await supabase
-    .from("settings")
-    .select("value")
-    .eq("key", "resources_drive_url")
-    .maybeSingle();
+  // Execute all independent queries in parallel to drastically minimize TTFB
+  const [adminRes, settingRes, tasksRes, profileRes] = await Promise.all([
+    isPrimary ? Promise.resolve({ data: true }) : supabase.rpc("is_admin"),
+    supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "resources_drive_url")
+      .maybeSingle(),
+    supabase
+      .from("tasks")
+      .select("*")
+      .order("due_at", { ascending: true }),
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
+
+  const isAdmin = isPrimary || !!adminRes.data;
+  const settingData = settingRes.data;
+  const tasks: Task[] = (tasksRes.data as Task[]) ?? [];
+  const profile = profileRes.data;
 
   const driveUrl =
     settingData?.value && settingData.value !== "https://drive.google.com"
       ? settingData.value
       : "https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU";
-
-  // Fetch active tasks sorted by nearest due date
-  // RLS automatically enforces: is_archived = false AND due_at + interval '4 days' > now()
-  const { data: tasksData } = await supabase
-    .from("tasks")
-    .select("*")
-    .order("due_at", { ascending: true });
-
-  const tasks: Task[] = tasksData ?? [];
-
-  // Fetch user profile for name display
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle();
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)]">

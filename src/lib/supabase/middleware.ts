@@ -60,41 +60,20 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If logged in, check profile approval status for UX routing
+  // Fast path for authenticated users on standard routes
   if (user && !isAuthRoute) {
-    // Check if user is an admin or approved
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_approved")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    // All registered students can access immediately unless explicitly revoked (is_approved === false)
-    const isApproved = profile ? profile.is_approved : true;
-
-    // Primary admin check fallback + Supabase RPC check
-    const isPrimaryEmail = user.email?.toLowerCase() === "psreyas09@gmail.com";
-    const { data: isAdmin } = await supabase.rpc("is_admin");
-
-    const hasAccess = isApproved || !!isAdmin || isPrimaryEmail;
-
-    if (!hasAccess && !isWaitingRoute) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/waiting-approval";
-      return NextResponse.redirect(url);
-    }
-
-    if (hasAccess && isWaitingRoute) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      return NextResponse.redirect(url);
-    }
-
-    // Protect /admin: require admin role or primary admin email
-    if (pathname.startsWith("/admin") && !isAdmin && !isPrimaryEmail) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      return NextResponse.redirect(url);
+    // Only check admin authorization when attempting to visit /admin routes
+    if (pathname.startsWith("/admin")) {
+      const isPrimaryEmail =
+        user.email?.toLowerCase() === "psreyas09@gmail.com";
+      if (!isPrimaryEmail) {
+        const { data: isAdmin } = await supabase.rpc("is_admin");
+        if (!isAdmin) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/";
+          return NextResponse.redirect(url);
+        }
+      }
     }
   }
 

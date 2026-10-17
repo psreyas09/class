@@ -18,32 +18,36 @@ export default async function ResolvedPage() {
     redirect("/login");
   }
 
-  const { data: isAdmin } = await supabase.rpc("is_admin");
+  const isPrimary = user.email?.toLowerCase() === "psreyas09@gmail.com";
 
-  const { data: settingData } = await supabase
-    .from("settings")
-    .select("value")
-    .eq("key", "resources_drive_url")
-    .maybeSingle();
+  // Execute independent queries in parallel
+  const [adminRes, settingRes, resolvedRes, profileRes] = await Promise.all([
+    isPrimary ? Promise.resolve({ data: true }) : supabase.rpc("is_admin"),
+    supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "resources_drive_url")
+      .maybeSingle(),
+    supabase
+      .from("resolved_complaints_view")
+      .select("*")
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
+
+  const isAdmin = isPrimary || !!adminRes.data;
+  const settingData = settingRes.data;
+  const resolvedList: ResolvedComplaintViewRow[] = resolvedRes.data ?? [];
+  const profile = profileRes.data;
 
   const driveUrl =
     settingData?.value && settingData.value !== "https://drive.google.com"
       ? settingData.value
       : "https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU";
-
-  // Query secure resolved_complaints_view (Fixed / Cannot Be Fixed, zero student identifiers)
-  const { data: resolvedData } = await supabase
-    .from("resolved_complaints_view")
-    .select("*")
-    .order("updated_at", { ascending: false });
-
-  const resolvedList: ResolvedComplaintViewRow[] = resolvedData ?? [];
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle();
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)]">

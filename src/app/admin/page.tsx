@@ -19,23 +19,58 @@ export default async function AdminPage() {
 
   // Strict backend admin check
   const isPrimary = user.email?.toLowerCase() === "psreyas09@gmail.com";
-  const { data: isAdmin } = await supabase.rpc("is_admin");
-  if (!isAdmin && !isPrimary) {
-    redirect("/");
-  }
-
-  // Fetch CR list
-  let crList: Admin[] = [];
-  try {
-    const { data: crData, error } = await supabase.rpc("admin_get_cr_list");
-    if (!error && crData) {
-      crList = crData as Admin[];
+  if (!isPrimary) {
+    const { data: isAdmin } = await supabase.rpc("is_admin");
+    if (!isAdmin) {
+      redirect("/");
     }
-  } catch {
-    // fallback if migration not run yet
   }
 
-  // Ensure primary admin is listed
+  // Fetch all dashboard data concurrently in parallel
+  const [
+    crRes,
+    settingRes,
+    activeTasksRes,
+    archivedTasksRes,
+    complaintsRes,
+    profilesRes,
+    profileRes,
+  ] = await Promise.all([
+    supabase.rpc("admin_get_cr_list").then(
+      (res) => res,
+      () => ({ data: [] as Admin[] })
+    ),
+    supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "resources_drive_url")
+      .maybeSingle(),
+    supabase
+      .from("tasks")
+      .select("*")
+      .eq("is_archived", false)
+      .order("due_at", { ascending: true }),
+    supabase
+      .from("tasks")
+      .select("*")
+      .eq("is_archived", true)
+      .order("due_at", { ascending: false }),
+    supabase
+      .from("admin_complaints_view")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
+
+  let crList: Admin[] = (crRes.data as Admin[]) ?? [];
   if (!crList.some((a) => a.email.toLowerCase() === "psreyas09@gmail.com")) {
     crList.unshift({
       email: "psreyas09@gmail.com",
@@ -44,49 +79,17 @@ export default async function AdminPage() {
     });
   }
 
-  // Fetch Drive link
-  const { data: settingData } = await supabase
-    .from("settings")
-    .select("value")
-    .eq("key", "resources_drive_url")
-    .maybeSingle();
-
   const driveUrl =
-    settingData?.value && settingData.value !== "https://drive.google.com"
-      ? settingData.value
+    settingRes.data?.value &&
+    settingRes.data.value !== "https://drive.google.com"
+      ? settingRes.data.value
       : "https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU";
 
-  // Fetch active tasks
-  const { data: activeTasksData } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("is_archived", false)
-    .order("due_at", { ascending: true });
-
-  // Fetch archived tasks
-  const { data: archivedTasksData } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("is_archived", true)
-    .order("due_at", { ascending: false });
-
-  // Fetch complaints via admin_complaints_view (anonymous privacy preserved)
-  const { data: complaintsData } = await supabase
-    .from("admin_complaints_view")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  // Fetch profiles for student approvals
-  const { data: profilesData } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle();
+  const activeTasksData = activeTasksRes.data ?? [];
+  const archivedTasksData = archivedTasksRes.data ?? [];
+  const complaintsData = complaintsRes.data ?? [];
+  const profilesData = profilesRes.data ?? [];
+  const profile = profileRes.data;
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)]">

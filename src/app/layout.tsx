@@ -31,6 +31,17 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      <head>
+        <link
+          rel="preconnect"
+          href="https://awsdidfgexircpeqtnto.supabase.co"
+          crossOrigin=""
+        />
+        <link
+          rel="dns-prefetch"
+          href="https://awsdidfgexircpeqtnto.supabase.co"
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)] selection:bg-amber-500/20 selection:text-amber-700 dark:selection:text-amber-300">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}

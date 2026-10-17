@@ -17,37 +17,39 @@ export default async function ComplaintsPage() {
     redirect("/login");
   }
 
-  // Admin status check
-  const { data: isAdmin } = await supabase.rpc("is_admin");
+  const isPrimary = user.email?.toLowerCase() === "psreyas09@gmail.com";
 
-  // Fetch Drive URL
-  const { data: settingData } = await supabase
-    .from("settings")
-    .select("value")
-    .eq("key", "resources_drive_url")
-    .maybeSingle();
+  // Execute independent database queries in parallel
+  const [adminRes, settingRes, complaintsRes, profileRes] = await Promise.all([
+    isPrimary ? Promise.resolve({ data: true }) : supabase.rpc("is_admin"),
+    supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "resources_drive_url")
+      .maybeSingle(),
+    supabase
+      .from("complaints")
+      .select(`
+        *,
+        replies:complaint_replies(*)
+      `)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
+
+  const isAdmin = isPrimary || !!adminRes.data;
+  const settingData = settingRes.data;
+  const complaints: Complaint[] = (complaintsRes.data as Complaint[]) ?? [];
+  const profile = profileRes.data;
 
   const driveUrl =
     settingData?.value && settingData.value !== "https://drive.google.com"
       ? settingData.value
       : "https://drive.google.com/drive/folders/1OSCphKi7hF756dsOiFXSTys17BFRBXtU";
-
-  // Fetch user's own complaints (RLS allows only student_id = auth.uid())
-  const { data: complaintsData } = await supabase
-    .from("complaints")
-    .select(`
-      *,
-      replies:complaint_replies(*)
-    `)
-    .order("created_at", { ascending: false });
-
-  const complaints: Complaint[] = (complaintsData as Complaint[]) ?? [];
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle();
 
   const defaultDisplayName =
     profile?.full_name || user.email?.split("@")[0] || "";
