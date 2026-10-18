@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const inter = Inter({
@@ -45,6 +46,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)] selection:bg-amber-500/20 selection:text-amber-700 dark:selection:text-amber-300">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
