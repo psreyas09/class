@@ -266,6 +266,30 @@ $$;
 REVOKE ALL ON FUNCTION public.admin_set_user_approval(UUID, BOOLEAN) FROM anon, public;
 GRANT EXECUTE ON FUNCTION public.admin_set_user_approval(UUID, BOOLEAN) TO authenticated;
 
+-- Permanently remove student user RPC
+CREATE OR REPLACE FUNCTION public.admin_delete_user(p_user_id UUID)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  v_user_email TEXT;
+BEGIN
+  IF NOT public.is_admin() THEN RAISE EXCEPTION 'Unauthorized: only admins can delete users' USING ERRCODE = '42501'; END IF;
+  IF p_user_id = auth.uid() THEN RAISE EXCEPTION 'You cannot delete your own admin account from here' USING ERRCODE = '42501'; END IF;
+  SELECT email INTO v_user_email FROM public.profiles WHERE id = p_user_id;
+  IF v_user_email IS NOT NULL THEN
+    IF EXISTS (SELECT 1 FROM public.admins WHERE lower(email) = lower(v_user_email)) THEN
+      RAISE EXCEPTION 'Cannot delete a Class Representative or Admin. Remove their admin role first.' USING ERRCODE = '42501';
+    END IF;
+  END IF;
+  UPDATE public.tasks SET created_by = NULL WHERE created_by = p_user_id;
+  UPDATE public.settings SET updated_by = NULL WHERE updated_by = p_user_id;
+  DELETE FROM public.complaints WHERE student_id = p_user_id;
+  DELETE FROM auth.users WHERE id = p_user_id;
+  DELETE FROM public.profiles WHERE id = p_user_id;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.admin_delete_user(UUID) FROM anon, public;
+GRANT EXECUTE ON FUNCTION public.admin_delete_user(UUID) TO authenticated;
+
 -- Reply to complaint RPC
 CREATE OR REPLACE FUNCTION public.admin_reply_to_complaint(p_complaint_id UUID, p_reply TEXT, p_status public.complaint_status)
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$

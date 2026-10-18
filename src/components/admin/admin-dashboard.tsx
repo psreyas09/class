@@ -72,6 +72,7 @@ export function AdminDashboard({
   // Approvals state
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   // CR Management state
   const [crList, setCrList] = useState<Admin[]>(initialCrList);
@@ -315,6 +316,47 @@ export function AdminDashboard({
       }
     } finally {
       setApprovingId(null);
+    }
+  }
+
+  async function handleDeleteUser(userId: string, studentName: string) {
+    if (
+      !confirm(
+        `Are you sure you want to permanently remove student "${studentName}"?\n\nThis will completely delete their account, profile, and student data. This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDeletingUserId(userId);
+      const supabase = createClient();
+
+      // 1. Try admin_delete_user RPC
+      const { error: rpcErr } = await supabase.rpc("admin_delete_user", {
+        p_user_id: userId,
+      });
+
+      if (rpcErr) {
+        // Fallback: try direct delete from profiles table
+        const { error: delErr } = await supabase
+          .from("profiles")
+          .delete()
+          .eq("id", userId);
+
+        if (delErr) {
+          alert(`Failed to remove student: ${rpcErr.message || delErr.message}`);
+          setDeletingUserId(null);
+          return;
+        }
+      }
+
+      setProfiles((prev) => prev.filter((p) => p.id !== userId));
+      router.refresh();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to remove student");
+    } finally {
+      setDeletingUserId(null);
     }
   }
 
@@ -681,7 +723,7 @@ export function AdminDashboard({
       {activeTab === "approvals" && (
         <section className="space-y-4">
           <div className="p-3 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 text-xs text-zinc-500">
-            All registered students automatically receive access upon signup. You can review enrolled students below or revoke access if needed.
+            All registered students automatically receive access upon signup. You can revoke access temporarily or permanently remove a student account.
           </div>
 
           <div className="border border-zinc-200 dark:border-zinc-800 rounded overflow-hidden">
@@ -691,7 +733,7 @@ export function AdminDashboard({
                   <th className="py-2.5 px-3">Student Name</th>
                   <th className="py-2.5 px-3">Email</th>
                   <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3 text-right">Action</th>
+                  <th className="py-2.5 px-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -717,22 +759,38 @@ export function AdminDashboard({
                       )}
                     </td>
                     <td className="py-2.5 px-3 text-right">
-                      <button
-                        type="button"
-                        disabled={approvingId === p.id}
-                        onClick={() => handleSetApproval(p.id, !p.is_approved)}
-                        className={`px-2.5 py-1 text-xs rounded transition-colors ${
-                          p.is_approved
-                            ? "border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-red-600"
-                            : "bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
-                        }`}
-                      >
-                        {approvingId === p.id
-                          ? "Saving..."
-                          : p.is_approved
-                          ? "Revoke Access"
-                          : "Approve Access"}
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          disabled={approvingId === p.id || deletingUserId === p.id}
+                          onClick={() => handleSetApproval(p.id, !p.is_approved)}
+                          className={`px-2.5 py-1 text-xs rounded transition-colors ${
+                            p.is_approved
+                              ? "border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-800"
+                              : "bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                          }`}
+                        >
+                          {approvingId === p.id
+                            ? "Saving..."
+                            : p.is_approved
+                            ? "Revoke Access"
+                            : "Approve Access"}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={approvingId === p.id || deletingUserId === p.id}
+                          onClick={() => handleDeleteUser(p.id, p.full_name || p.email)}
+                          className="p-1.5 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded border border-zinc-200 dark:border-zinc-800 transition-colors disabled:opacity-50"
+                          title="Permanently remove student account"
+                        >
+                          {deletingUserId === p.id ? (
+                            <span className="w-3.5 h-3.5 block border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
