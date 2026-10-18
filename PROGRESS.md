@@ -2,38 +2,87 @@
 
 - **Project**: ClassDesk (College Classroom Web Application)
 - **Deployment Target**: Vercel + Supabase (Free Tier)
-- **Status**: Updated & Verified (`npm run build` cleanly passed)
+- **Current Branch**: `main` (clean, in sync with `origin/main`)
+- **Status**: Production-ready, verified (`npm run build` cleanly passed)
 
 ---
 
-## 📌 Latest Updates
+## 📌 Recent Features & Changelog
 
-1. **Primary Admin Account (`psreyas09@gmail.com`)**:
-   - `psreyas09@gmail.com` configured as Primary Admin with full CR rights plus exclusive CR management rights.
-   - Built-in fallback in backend & middleware ensures `psreyas09@gmail.com` always has full admin access.
+### 1. Permanent Student Account Removal (Admin Dashboard)
+- **Commit**: `9019263`
+- **Description**: Admins / CRs previously could only toggle "Revoke Access" (soft suspend). An explicit **Remove Student** action (Trash icon) has been added to the **Student Approvals** tab.
+- **Backend / Database**:
+  - `admin_delete_user(p_user_id UUID)` RPC in [`supabase/admin_delete_student.sql`](supabase/admin_delete_student.sql) and [`supabase/full_schema.sql`](supabase/full_schema.sql).
+  - Deletes from `auth.users`, automatically cascading to `public.profiles`, `public.complaints`, and `public.push_subscriptions`.
+  - Cleans up any foreign key references (`tasks.created_by`, `settings.updated_by`).
+  - **Guards**: Prevents admins from deleting themselves and prevents deleting users with active CR/Admin roles.
+  - Added fallback direct delete RLS policy on `public.profiles` for admins.
+- **Frontend**:
+  - Updated [`src/components/admin/admin-dashboard.tsx`](src/components/admin/admin-dashboard.tsx) with confirmation modal and optimistic list updating.
 
-2. **Dashboard CR Management (`/admin` -> "CR Admins" Tab)**:
-   - Dynamic tab in the Admin panel showing all active Class Representatives.
-   - Primary Admin can add any CR by email (`admin_add_cr` RPC) or remove existing CRs (`admin_remove_cr` RPC).
-   - Primary Admin is protected against deletion or role modification.
+### 2. New Task Types: `Exam` & `Registration`
+- **Commit**: `e687980`
+- **Description**: Added `"Exam"` and `"Registration"` task categories alongside Assignment, Record, Reference Record, Form, and Other.
+- **Database**:
+  - Migration script [`supabase/add_task_types_exam_registration.sql`](supabase/add_task_types_exam_registration.sql).
+  - Added values to `public.task_type` enum via `ALTER TYPE public.task_type ADD VALUE IF NOT EXISTS ...`.
+- **Frontend**:
+  - Updated TypeScript [`TaskType`](src/lib/types.ts).
+  - Added filter buttons to [`src/components/task-filters.tsx`](src/components/task-filters.tsx).
+  - Added to dropdown in [`src/components/admin/task-editor-dialog.tsx`](src/components/admin/task-editor-dialog.tsx).
 
-3. **Universal Instant Sign-in for All Students**:
-   - Registered students are automatically approved (`is_approved = true` default) and can browse tasks immediately without being blocked.
-   - Approvals tab still allows CRs to review all registered students and selectively revoke access if needed.
+### 3. Vercel Web Analytics Integration
+- **Commit**: `ae90c41`
+- **Description**: Installed `@vercel/analytics` and integrated `<Analytics />` from `@vercel/analytics/next` in [`src/app/layout.tsx`](src/app/layout.tsx).
+- **Setup Note**: Must be toggled **Enabled** in the Vercel Dashboard under the project's **Analytics** tab. Does not track `localhost` in development mode.
 
-4. **Complaint Registration: Display Name or Anonymous**:
-   - Students can choose:
-     - **With Display Name**: Customize/confirm the name visible to CRs (prefilled with full name/account handle).
-     - **Post Anonymously**: 100% confidential submission where identity and email are stripped before reaching CRs.
-   - Database schema and `admin_complaints_view` updated with `display_name` column.
+### 4. Task Editor Date & Time Separation
+- **Commit**: `75ae8e5` & `2baf37e`
+- **Description**:
+  - Due Date (`<input type="date">`) and optional Due Time (`<input type="time">`) are split into two inputs in [`src/components/admin/task-editor-dialog.tsx`](src/components/admin/task-editor-dialog.tsx).
+  - If no time is specified, it automatically defaults to `11:59 PM` (23:59 Asia/Kolkata).
+  - Subject input defaults to `"General"` if left empty.
 
-5. **SQL Migration Script**:
-   - Stored in [supabase/update_primary_admin_and_complaints.sql](file:///home/sreyas/projects/class/supabase/update_primary_admin_and_complaints.sql).
+### 5. Onboarding Guide Modal
+- **Commit**: `3776f7c` & `1c9d8e6`
+- **Description**: Added an onboarding guide modal for new students with a "Don't show again" checkbox (persisted in `localStorage`) and a permanent "Guide" button in the Navbar.
+
+### 6. Complaints System Enhancements
+- **Commit**: `3cf375c`, `ddfdca9`, `abb8469`
+- **Description**:
+  - Permanent delete complaint button in the CR dashboard (`admin_delete_complaint` RPC).
+  - Dual notifications: notifies all registered CR emails when a complaint is filed and sends confirmation receipt to the student.
+  - Support for Anonymous or Display Name submission.
 
 ---
 
-## 🚀 How to Apply Changes in Supabase
+## 🗄️ Supabase Migrations Checklist (For Remote DB)
 
-1. Open your Supabase project's **SQL Editor**.
-2. Run the script from `supabase/update_primary_admin_and_complaints.sql`.
-3. Sign in with `psreyas09@gmail.com` to access the Admin dashboard at `http://localhost:3000/admin`.
+When setting up or verifying the live Supabase project, ensure these SQL queries have been executed in the **Supabase Dashboard > SQL Editor**:
+
+1. **Add Task Types (`Exam`, `Registration`)**:
+   ```sql
+   ALTER TYPE public.task_type ADD VALUE IF NOT EXISTS 'Exam';
+   ALTER TYPE public.task_type ADD VALUE IF NOT EXISTS 'Registration';
+   ```
+   *(File: `supabase/add_task_types_exam_registration.sql`)*
+
+2. **Add Student Deletion RPC**:
+   ```sql
+   -- Run contents of supabase/admin_delete_student.sql
+   ```
+
+3. **Full Schema Reference**:
+   - `supabase/full_schema.sql` contains the canonical, cumulative database schema.
+
+---
+
+## 🏗️ Architecture & Conventions
+- **Framework**: Next.js 16 (App Router + Turbopack)
+- **Language**: TypeScript (`strict: true`)
+- **Styling**: Tailwind CSS v4 (`@tailwindcss/turbopack`)
+- **Auth & Database**: Supabase SSR (`@supabase/ssr`, `@supabase/supabase-js`)
+- **Timezone**: Asia/Kolkata (`date-fns-tz`)
+- **Notifications**: Resend Email API + Web Push (VAPID)
+- **Analytics**: `@vercel/analytics`
