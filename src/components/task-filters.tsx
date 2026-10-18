@@ -19,6 +19,8 @@ const TASK_TYPES: (TaskType | "All")[] = [
   "Record",
   "Reference Record",
   "Form",
+  "Exam",
+  "Registration",
   "Other",
 ];
 

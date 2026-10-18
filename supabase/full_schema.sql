@@ -144,9 +144,12 @@ CREATE POLICY "Admins can update settings" ON public.settings FOR ALL TO authent
 
 -- 4. TASKS TABLE
 DO $$ BEGIN
-  CREATE TYPE public.task_type AS ENUM ('Assignment', 'Record', 'Reference Record', 'Form', 'Other');
+  CREATE TYPE public.task_type AS ENUM ('Assignment', 'Record', 'Reference Record', 'Form', 'Exam', 'Registration', 'Other');
 EXCEPTION WHEN duplicate_object THEN null;
 END $$;
+
+ALTER TYPE public.task_type ADD VALUE IF NOT EXISTS 'Exam';
+ALTER TYPE public.task_type ADD VALUE IF NOT EXISTS 'Registration';
 
 CREATE TABLE IF NOT EXISTS public.tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

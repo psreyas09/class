@@ -3,6 +3,8 @@ export type TaskType =
   | "Record"
   | "Reference Record"
   | "Form"
+  | "Exam"
+  | "Registration"
   | "Other";
 
 export type ComplaintCategory =
