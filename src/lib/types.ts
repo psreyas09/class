@@ -103,3 +103,24 @@ export interface ResolvedComplaintViewRow {
   updated_at: string;
   latest_reply: string | null;
 }
+
+export type AnnouncementPriority = "normal" | "important" | "urgent";
+
+export interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  priority: AnnouncementPriority;
+  link?: string | null;
+  sender_id?: string | null;
+  sender_name?: string | null;
+  sender_email?: string | null;
+  target_type: "all" | "selected";
+  target_user_ids?: string[] | null;
+  target_count: number;
+  channels: ("mail" | "browser")[];
+  emails_sent: number;
+  push_sent: number;
+  created_at: string;
+}
+

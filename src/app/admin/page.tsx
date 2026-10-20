@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
-import { Task, AdminComplaintViewRow, Profile, Admin } from "@/lib/types";
+import { Task, AdminComplaintViewRow, Profile, Admin, Announcement } from "@/lib/types";
 
 import { headers } from "next/headers";
 import { getCachedDriveUrl } from "@/lib/settings";
@@ -52,6 +52,7 @@ export default async function AdminPage() {
     archivedTasksRes,
     complaintsRes,
     profilesRes,
+    announcementsRes,
   ] = await Promise.all([
     getCachedDriveUrl(),
     supabase.rpc("admin_get_cr_list").then(
@@ -76,9 +77,17 @@ export default async function AdminPage() {
       .from("profiles")
       .select("*")
       .order("created_at", { ascending: false }),
+    supabase
+      .from("announcements")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(
+        (res) => res,
+        () => ({ data: [] as Announcement[] })
+      ),
   ]);
 
-  let crList: Admin[] = (crRes.data as Admin[]) ?? [];
+  const crList: Admin[] = (crRes.data as Admin[]) ?? [];
   if (!crList.some((a) => a.email.toLowerCase() === "psreyas09@gmail.com")) {
     crList.unshift({
       email: "psreyas09@gmail.com",
@@ -91,6 +100,7 @@ export default async function AdminPage() {
   const archivedTasksData = archivedTasksRes.data ?? [];
   const complaintsData = complaintsRes.data ?? [];
   const profilesData = profilesRes.data ?? [];
+  const announcementsData = announcementsRes.data ?? [];
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)]">
@@ -110,6 +120,7 @@ export default async function AdminPage() {
           initialDriveUrl={driveUrl}
           initialCrList={crList}
           isPrimaryAdmin={isPrimary}
+          initialAnnouncements={(announcementsData as Announcement[]) ?? []}
         />
       </main>
     </div>

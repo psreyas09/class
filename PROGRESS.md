@@ -9,7 +9,18 @@
 
 ## 📌 Recent Features & Changelog
 
-### 1. Permanent Student Account Removal (Admin Dashboard)
+### 1. CR Announcement Broadcast System (Email & Browser Web Push)
+- **Description**: CRs can now type and broadcast announcements directly from CR Admin Control to all registered students or custom selected students via both Email and Native Browser Web Push notifications.
+- **Backend**:
+  - API endpoint [`src/app/api/announcements/broadcast/route.ts`](src/app/api/announcements/broadcast/route.ts) with full Admin/CR verification, audience filtering, parallel email delivery (Gmail SMTP / Resend), Web Push dispatch, and database persistence.
+  - Database schema and RLS policies in [`supabase/announcements_schema.sql`](supabase/announcements_schema.sql).
+- **Frontend**:
+  - Announcements tab in CR Admin Control with composer and history ([`src/components/admin/announcement-broadcast-section.tsx`](src/components/admin/announcement-broadcast-section.tsx)).
+  - Audience selection modes: "All Students" or "Select Users" with live search and multi-select.
+  - Priority levels (`Normal`, `Important`, `Urgent`), attachment URL, and delivery channel toggles.
+  - Live announcement notice card on the student homepage ([`src/components/task-board.tsx`](src/components/task-board.tsx)).
+
+### 2. Permanent Student Account Removal (Admin Dashboard)
 - **Commit**: `9019263`
 - **Description**: Admins / CRs previously could only toggle "Revoke Access" (soft suspend). An explicit **Remove Student** action (Trash icon) has been added to the **Student Approvals** tab.
 - **Backend / Database**:

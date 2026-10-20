@@ -8,11 +8,13 @@ import {
   Profile,
   ComplaintStatus,
   Admin,
+  Announcement,
 } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { formatKolkataDateTime, formatKolkataShort } from "@/lib/date-utils";
 import { TaskEditorDialog } from "@/components/admin/task-editor-dialog";
 import { ReplyDialog } from "@/components/admin/reply-dialog";
+import { AnnouncementBroadcastSection } from "@/components/admin/announcement-broadcast-section";
 import {
   Plus,
   Edit2,
@@ -25,11 +27,11 @@ import {
   FolderOpen,
   EyeOff,
   Check,
-  X,
   ExternalLink,
   ShieldCheck,
   ShieldAlert,
   CheckSquare,
+  Megaphone,
 } from "lucide-react";
 
 interface AdminDashboardProps {
@@ -40,9 +42,10 @@ interface AdminDashboardProps {
   initialDriveUrl: string;
   initialCrList?: Admin[];
   isPrimaryAdmin?: boolean;
+  initialAnnouncements?: Announcement[];
 }
 
-type TabType = "tasks" | "archive" | "complaints" | "approvals" | "crs" | "settings";
+type TabType = "tasks" | "announcements" | "archive" | "complaints" | "approvals" | "crs" | "settings";
 
 export function AdminDashboard({
   initialActiveTasks,
@@ -52,9 +55,13 @@ export function AdminDashboard({
   initialDriveUrl,
   initialCrList = [],
   isPrimaryAdmin = false,
+  initialAnnouncements = [],
 }: AdminDashboardProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("tasks");
+
+  // Announcements state
+  const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
 
   // Tasks state
   const [activeTasks, setActiveTasks] = useState<Task[]>(initialActiveTasks);
@@ -427,6 +434,17 @@ export function AdminDashboard({
             <span>Create Task</span>
           </button>
         )}
+
+        {activeTab !== "announcements" && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("announcements")}
+            className="hidden sm:flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border border-amber-300 dark:border-amber-900/60 bg-amber-500/10 text-amber-800 dark:text-amber-400 hover:bg-amber-500/20 transition-colors shrink-0"
+          >
+            <Megaphone className="w-3.5 h-3.5" />
+            <span>Send Announcement</span>
+          </button>
+        )}
       </div>
 
       {/* Tabs Bar */}
@@ -441,6 +459,18 @@ export function AdminDashboard({
         >
           <CheckSquare className="w-3.5 h-3.5" />
           <span>Active Tasks ({activeTasks.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("announcements")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors whitespace-nowrap ${
+            activeTab === "announcements"
+              ? "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium"
+              : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+          }`}
+        >
+          <Megaphone className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          <span>Announcements ({announcements.length})</span>
         </button>
 
         <button
@@ -571,7 +601,18 @@ export function AdminDashboard({
         </section>
       )}
 
-      {/* ================= TAB 2: ARCHIVE ================= */}
+      {/* ================= TAB 2: ANNOUNCEMENTS ================= */}
+      {activeTab === "announcements" && (
+        <AnnouncementBroadcastSection
+          profiles={profiles}
+          initialAnnouncements={announcements}
+          onAnnouncementCreated={(newAnn) => {
+            setAnnouncements((prev) => [newAnn, ...prev]);
+          }}
+        />
+      )}
+
+      {/* ================= TAB 3: ARCHIVE ================= */}
       {activeTab === "archive" && (
         <section className="space-y-3">
           <div className="p-3 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 text-xs text-zinc-500">

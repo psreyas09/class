@@ -81,8 +81,8 @@ export function PushToggle() {
           return;
         }
 
-        const registration = await navigator.serviceWorker.register("/sw.js");
-        await navigator.serviceWorker.ready;
+        await navigator.serviceWorker.register("/sw.js");
+        const registration = await navigator.serviceWorker.ready;
 
         const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
 
@@ -107,8 +107,17 @@ export function PushToggle() {
 
         setIsSubscribed(true);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Push subscription toggle error:", err);
+      const errStr = String(err);
+      if (errStr.includes("push service error") || (err as { name?: string })?.name === "AbortError") {
+        const isBrave = typeof (navigator as unknown as { brave?: { isBrave?: () => Promise<boolean> } }).brave?.isBrave === "function";
+        if (isBrave) {
+          alert("Push notification registration failed.\n\nIn Brave browser, you must enable:\nSettings > Privacy and security > 'Use Google services for push messaging'\nThen restart Brave and try again.");
+        } else {
+          alert("Push notification registration failed.\n\nThe browser push service could not be reached. If you are using Brave, enable 'Use Google services for push messaging' in settings. Also check if a VPN, firewall, or ad-blocker is blocking push services.");
+        }
+      }
     } finally {
       setLoading(false);
     }

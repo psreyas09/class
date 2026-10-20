@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { TaskBoard } from "@/components/task-board";
-import { Task } from "@/lib/types";
+import { Task, Announcement } from "@/lib/types";
 
 import { headers } from "next/headers";
 import { getCachedDriveUrl } from "@/lib/settings";
@@ -40,17 +40,27 @@ export default async function HomePage() {
   const isPrimary = userEmail?.toLowerCase() === "psreyas09@gmail.com";
 
   // Execute all independent operations in parallel
-  const [driveUrl, adminRes, tasksRes] = await Promise.all([
+  const [driveUrl, adminRes, tasksRes, announcementsRes] = await Promise.all([
     getCachedDriveUrl(),
     isPrimary ? Promise.resolve({ data: true }) : supabase.rpc("is_admin"),
     supabase
       .from("tasks")
       .select("*")
       .order("due_at", { ascending: true }),
+    supabase
+      .from("announcements")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(5)
+      .then(
+        (res) => res,
+        () => ({ data: [] as Announcement[] })
+      ),
   ]);
 
   const isAdmin = isPrimary || !!adminRes.data;
   const tasks: Task[] = (tasksRes.data as Task[]) ?? [];
+  const announcements: Announcement[] = (announcementsRes.data as Announcement[]) ?? [];
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--background)]">
@@ -66,6 +76,7 @@ export default async function HomePage() {
           initialTasks={tasks}
           driveUrl={driveUrl}
           isAdmin={!!isAdmin}
+          initialAnnouncements={announcements}
         />
       </main>
     </div>

@@ -2,7 +2,20 @@
 
 All notable changes to the ClassDesk project are documented in this file.
 
-## [Unreleased] - 2026-10-18
+## [Unreleased] - 2026-10-20
+
+### Added
+- **CR Announcement Broadcast System (Email & Browser Notifications)**:
+  - Added dedicated **Announcements** tab in CR Admin Control with broadcast management and delivery tracking ([`src/components/admin/admin-dashboard.tsx`](src/components/admin/admin-dashboard.tsx)).
+  - Built interactive [Announcement Composer](src/components/admin/announcement-broadcast-section.tsx) allowing CRs to type custom announcements, choose priority (`Normal`, `Important`, `Urgent`), attach optional links, and select delivery channels (Email and Browser Push).
+  - Added flexible audience selection: broadcast to **All Students** or **Select Specific Students** with instant name/email search, "Select All Filtered", and per-student checkboxes.
+  - Built backend broadcast route ([`src/app/api/announcements/broadcast/route.ts`](src/app/api/announcements/broadcast/route.ts)) sending HTML emails (Gmail SMTP / Resend) and Web Push notifications to selected users' devices.
+  - Added database persistence and RLS security in [`supabase/announcements_schema.sql`](supabase/announcements_schema.sql).
+  - Added top Announcement Notice banner with collapsible history on the student homepage ([`src/components/task-board.tsx`](src/components/task-board.tsx)).
+- **Push Notification Troubleshooting**:
+  - Added Brave browser Google services push messaging guidance and abort error handling in [`src/components/push-toggle.tsx`](src/components/push-toggle.tsx).
+
+## [0.1.0] - 2026-10-18
 
 ### Added
 - **Permanent Student Removal**:
